@@ -11,11 +11,16 @@ const UPLOAD_DIR = join(DATA_DIR, "uploads");
 const RECORDS_FILE = join(DATA_DIR, "records.json");
 const TASK_TEMPLATES_FILE = join(DATA_DIR, "task-templates.json");
 const CUSTOM_TASKS_FILE = join(DATA_DIR, "custom-tasks.json");
+const USE_DATABASE = Boolean(process.env.DATABASE_URL);
 
 ensureDir(DATA_DIR);
 ensureDir(UPLOAD_DIR);
-if (!existsSync(RECORDS_FILE)) writeJson(RECORDS_FILE, []);
-if (!existsSync(CUSTOM_TASKS_FILE)) writeJson(CUSTOM_TASKS_FILE, []);
+if (!USE_DATABASE) {
+  if (!existsSync(RECORDS_FILE)) writeJson(RECORDS_FILE, []);
+  if (!existsSync(CUSTOM_TASKS_FILE)) writeJson(CUSTOM_TASKS_FILE, []);
+}
+
+const storageReady = initializeStorage();
 
 const MIME_TYPES = {
   ".html": "text/html; charset=utf-8",
@@ -36,26 +41,32 @@ createServer(async (req, res) => {
   try {
     const url = new URL(req.url, `http://${req.headers.host}`);
 
+    if (req.method === "GET" && (url.pathname === "/health" || url.pathname === "/api/health")) {
+      return sendJson(res, { ok: true, storage: USE_DATABASE ? "postgres" : "json" });
+    }
+
+    if (url.pathname.startsWith("/api/")) await storageReady;
+
     if (req.method === "GET" && url.pathname === "/api/records") {
-      return sendJson(res, recordsForPhone(url.searchParams.get("phone")));
+      return sendJson(res, await recordsForPhone(url.searchParams.get("phone")));
     }
 
     if (req.method === "GET" && url.pathname === "/api/profile") {
       const phone = normalizePhone(url.searchParams.get("phone"));
       return sendJson(res, {
         phone,
-        profile: findTaskProfileByPhone(phone),
-        records: recordsForPhone(phone),
-        customTasks: customTasksForPhone(phone)
+        profile: await findTaskProfileByPhone(phone),
+        records: await recordsForPhone(phone),
+        customTasks: await customTasksForPhone(phone)
       });
     }
 
     if (req.method === "GET" && url.pathname === "/api/task-templates") {
-      return sendJson(res, readTaskTemplates());
+      return sendJson(res, await readTaskTemplates());
     }
 
     if (req.method === "GET" && url.pathname === "/api/custom-tasks") {
-      return sendJson(res, customTasksForPhone(url.searchParams.get("phone")));
+      return sendJson(res, await customTasksForPhone(url.searchParams.get("phone")));
     }
 
     if (req.method === "POST" && url.pathname === "/api/custom-tasks") {
@@ -65,7 +76,7 @@ createServer(async (req, res) => {
 
     if (req.method === "DELETE" && url.pathname.startsWith("/api/custom-tasks/")) {
       const id = decodeURIComponent(url.pathname.replace("/api/custom-tasks/", ""));
-      const deleted = deleteCustomTask(id);
+      const deleted = await deleteCustomTask(id);
       return sendJson(res, { ok: deleted });
     }
 
@@ -82,16 +93,21 @@ createServer(async (req, res) => {
 
     if (req.method === "DELETE" && url.pathname.startsWith("/api/records/")) {
       const id = decodeURIComponent(url.pathname.replace("/api/records/", ""));
-      const deleted = deleteRecord(id);
+      const deleted = await deleteRecord(id);
       return sendJson(res, { ok: deleted });
     }
 
+    if (req.method === "POST" && url.pathname === "/api/admin/import-json") {
+      const result = await importJsonData(req);
+      return sendJson(res, result, 201);
+    }
+
     if (req.method === "GET" && url.pathname === "/api/export.json") {
-      return send(res, 200, JSON.stringify(readRecords(), null, 2), "application/json; charset=utf-8");
+      return send(res, 200, JSON.stringify(await readRecords(), null, 2), "application/json; charset=utf-8");
     }
 
     if (req.method === "GET" && url.pathname === "/api/export.csv") {
-      return send(res, 200, "\ufeff" + toCsv(readRecords()), "text/csv; charset=utf-8", {
+      return send(res, 200, "\ufeff" + toCsv(await readRecords()), "text/csv; charset=utf-8", {
         "Content-Disposition": "attachment; filename=\"knowledge-records.csv\""
       });
     }
@@ -105,7 +121,7 @@ createServer(async (req, res) => {
     return sendJson(res, { error: "Method not allowed" }, 405);
   } catch (error) {
     console.error(error);
-    return sendJson(res, { error: error.message || "Server error" }, 500);
+    return sendJson(res, { error: error.message || "Server error" }, error.statusCode || 500);
   }
 }).listen(PORT, () => {
   console.log(`Knowledge upload tool running at http://localhost:${PORT}`);
@@ -167,9 +183,7 @@ async function createRecord(req) {
   if (!record.title) record.title = `${record.sourceCategory || "未分類資料"} - ${now.slice(0, 10)}`;
   if (!record.sourceCategory) throw new Error("資料來源分類必填");
 
-  const records = readRecords();
-  records.push(record);
-  writeJson(RECORDS_FILE, records);
+  await saveRecord(record);
   return record;
 }
 
@@ -181,7 +195,7 @@ async function updateRecord(id, req) {
 
   const body = await readBody(req);
   const { fields, files } = parseMultipart(body, contentType);
-  const records = readRecords();
+  const records = await readRecords();
   const index = records.findIndex((record) => record.id === id);
   if (index === -1) throw new Error("Record not found");
 
@@ -229,8 +243,7 @@ async function updateRecord(id, req) {
   if (!updated.title) updated.title = `${updated.sourceCategory || "未分類資料"} - ${now.slice(0, 10)}`;
   if (!updated.sourceCategory) throw new Error("資料來源分類必填");
 
-  records[index] = updated;
-  writeJson(RECORDS_FILE, records);
+  await saveRecord(updated);
   return updated;
 }
 
@@ -246,7 +259,7 @@ async function createCustomTask(req) {
   if (!phone) throw new Error("請輸入電話號碼");
   if (!name) throw new Error("請輸入任務名稱");
 
-  const profile = findTaskProfileByPhone(phone);
+  const profile = await findTaskProfileByPhone(phone);
   const now = new Date().toISOString();
   const period = normalizeTaskPeriod(fields.period);
   const task = {
@@ -276,9 +289,7 @@ async function createCustomTask(req) {
     updatedAt: now
   };
 
-  const tasks = readCustomTasks();
-  tasks.push(task);
-  writeCustomTasks(tasks);
+  await saveCustomTask(task);
   return task;
 }
 
@@ -302,8 +313,15 @@ function saveAttachments(id, files) {
     });
 }
 
-function deleteRecord(id) {
-  const records = readRecords();
+async function deleteRecord(id) {
+  if (USE_DATABASE) {
+    const result = await dbQuery("DELETE FROM records WHERE id = $1", [id]);
+    const recordDir = join(UPLOAD_DIR, id);
+    if (existsSync(recordDir)) rmSync(recordDir, { recursive: true, force: true });
+    return result.rowCount > 0;
+  }
+
+  const records = await readRecords();
   const next = records.filter((record) => record.id !== id);
   if (next.length === records.length) return false;
   writeJson(RECORDS_FILE, next);
@@ -312,8 +330,13 @@ function deleteRecord(id) {
   return true;
 }
 
-function deleteCustomTask(id) {
-  const tasks = readCustomTasks();
+async function deleteCustomTask(id) {
+  if (USE_DATABASE) {
+    const result = await dbQuery("DELETE FROM custom_tasks WHERE id = $1", [id]);
+    return result.rowCount > 0;
+  }
+
+  const tasks = await readCustomTasks();
   const next = tasks.filter((task) => task.id !== id);
   if (next.length === tasks.length) return false;
   writeCustomTasks(next);
@@ -422,7 +445,191 @@ function safeJoin(base, requestPath) {
   return target.startsWith(root) ? target : null;
 }
 
-function readRecords() {
+let dbPoolPromise = null;
+
+async function initializeStorage() {
+  if (!USE_DATABASE) return;
+
+  await dbQuery(`
+    CREATE TABLE IF NOT EXISTS task_templates (
+      key text PRIMARY KEY,
+      data jsonb NOT NULL,
+      updated_at timestamptz NOT NULL DEFAULT now()
+    )
+  `);
+  await dbQuery(`
+    CREATE TABLE IF NOT EXISTS records (
+      id text PRIMARY KEY,
+      phone text,
+      data jsonb NOT NULL,
+      created_at timestamptz NOT NULL DEFAULT now(),
+      updated_at timestamptz NOT NULL DEFAULT now()
+    )
+  `);
+  await dbQuery("CREATE INDEX IF NOT EXISTS records_phone_idx ON records (phone)");
+  await dbQuery(`
+    CREATE TABLE IF NOT EXISTS custom_tasks (
+      id text PRIMARY KEY,
+      phone text,
+      data jsonb NOT NULL,
+      created_at timestamptz NOT NULL DEFAULT now(),
+      updated_at timestamptz NOT NULL DEFAULT now()
+    )
+  `);
+  await dbQuery("CREATE INDEX IF NOT EXISTS custom_tasks_phone_idx ON custom_tasks (phone)");
+  await seedTaskTemplatesFromLocalFile();
+}
+
+async function getDbPool() {
+  if (!dbPoolPromise) {
+    dbPoolPromise = (async () => {
+      const { Pool } = await import("pg");
+      const options = { connectionString: process.env.DATABASE_URL };
+      if (process.env.DATABASE_SSL === "true" || process.env.DATABASE_URL.includes("sslmode=require")) {
+        options.ssl = { rejectUnauthorized: false };
+      }
+      return new Pool(options);
+    })();
+  }
+  return dbPoolPromise;
+}
+
+async function dbQuery(sql, params = []) {
+  const pool = await getDbPool();
+  return pool.query(sql, params);
+}
+
+async function seedTaskTemplatesFromLocalFile() {
+  const existing = await dbQuery("SELECT key FROM task_templates WHERE key = $1", ["default"]);
+  if (existing.rowCount > 0) return;
+
+  const templates = readTaskTemplatesFile();
+  if (!templates.people?.length) return;
+  await writeTaskTemplates(templates);
+}
+
+async function writeTaskTemplates(templates) {
+  if (USE_DATABASE) {
+    await dbQuery(
+      `
+        INSERT INTO task_templates (key, data, updated_at)
+        VALUES ($1, $2::jsonb, now())
+        ON CONFLICT (key) DO UPDATE SET data = EXCLUDED.data, updated_at = now()
+      `,
+      ["default", JSON.stringify(templates || [])]
+    );
+    return;
+  }
+
+  writeJson(TASK_TEMPLATES_FILE, templates || []);
+}
+
+async function saveRecord(record) {
+  if (USE_DATABASE) {
+    const createdAt = record.createdAt || new Date().toISOString();
+    const updatedAt = record.updatedAt || createdAt;
+    const normalizedRecord = { ...record, createdAt, updatedAt };
+    await dbQuery(
+      `
+        INSERT INTO records (id, phone, data, created_at, updated_at)
+        VALUES ($1, $2, $3::jsonb, $4, $5)
+        ON CONFLICT (id) DO UPDATE
+        SET phone = EXCLUDED.phone, data = EXCLUDED.data, updated_at = EXCLUDED.updated_at
+      `,
+      [
+        normalizedRecord.id,
+        normalizePhone(normalizedRecord.phone),
+        JSON.stringify(normalizedRecord),
+        normalizedRecord.createdAt,
+        normalizedRecord.updatedAt
+      ]
+    );
+    return normalizedRecord;
+  }
+
+  const records = await readRecords();
+  const index = records.findIndex((item) => item.id === record.id);
+  if (index === -1) records.push(record);
+  else records[index] = record;
+  writeJson(RECORDS_FILE, records);
+  return record;
+}
+
+async function saveCustomTask(task) {
+  if (USE_DATABASE) {
+    const createdAt = task.createdAt || new Date().toISOString();
+    const updatedAt = task.updatedAt || createdAt;
+    const normalizedTask = { ...task, createdAt, updatedAt };
+    await dbQuery(
+      `
+        INSERT INTO custom_tasks (id, phone, data, created_at, updated_at)
+        VALUES ($1, $2, $3::jsonb, $4, $5)
+        ON CONFLICT (id) DO UPDATE
+        SET phone = EXCLUDED.phone, data = EXCLUDED.data, updated_at = EXCLUDED.updated_at
+      `,
+      [
+        normalizedTask.id,
+        normalizePhone(normalizedTask.phone),
+        JSON.stringify(normalizedTask),
+        normalizedTask.createdAt,
+        normalizedTask.updatedAt
+      ]
+    );
+    return normalizedTask;
+  }
+
+  const tasks = await readCustomTasks();
+  const index = tasks.findIndex((item) => item.id === task.id);
+  if (index === -1) tasks.push(task);
+  else tasks[index] = task;
+  writeCustomTasks(tasks);
+  return task;
+}
+
+async function importJsonData(req) {
+  const contentType = req.headers["content-type"] || "";
+  if (!contentType.includes("application/json")) throw new Error("Expected application/json");
+
+  const fields = await readJsonBody(req);
+  const configuredToken = process.env.IMPORT_TOKEN;
+  const providedToken = cleanText(req.headers["x-import-token"] || fields.token);
+  if (!configuredToken) throw httpError("匯入功能尚未設定 IMPORT_TOKEN", 403);
+  if (providedToken !== configuredToken) throw httpError("匯入授權失敗", 403);
+
+  const result = {
+    taskTemplates: 0,
+    records: 0,
+    customTasks: 0
+  };
+
+  if (fields.taskTemplates) {
+    await writeTaskTemplates(fields.taskTemplates);
+    result.taskTemplates = fields.taskTemplates.people?.length || 1;
+  }
+  if (Array.isArray(fields.records)) {
+    for (const record of fields.records) await saveRecord(record);
+    result.records = fields.records.length;
+  }
+  if (Array.isArray(fields.customTasks)) {
+    for (const task of fields.customTasks) await saveCustomTask(task);
+    result.customTasks = fields.customTasks.length;
+  }
+
+  return { ok: true, imported: result, storage: USE_DATABASE ? "postgres" : "json" };
+}
+
+function httpError(message, statusCode) {
+  const error = new Error(message);
+  error.statusCode = statusCode;
+  return error;
+}
+
+async function readRecords() {
+  if (USE_DATABASE) {
+    const result = await dbQuery("SELECT data FROM records ORDER BY created_at DESC");
+    return result.rows.map((row) => row.data);
+  }
+
   try {
     return JSON.parse(readFileSync(RECORDS_FILE, "utf8"));
   } catch {
@@ -430,18 +637,27 @@ function readRecords() {
   }
 }
 
-function recordsForPhone(phoneValue = "") {
+async function recordsForPhone(phoneValue = "") {
   const phone = normalizePhone(phoneValue);
-  const records = readRecords().sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+  const records = (await readRecords()).sort((a, b) => (b.createdAt || "").localeCompare(a.createdAt || ""));
   if (!phone) return records;
-  const profile = findTaskProfileByPhone(phone);
+  const profile = await findTaskProfileByPhone(phone);
   return records.filter((record) => {
     if (normalizePhone(record.phone) === phone) return true;
     return !record.phone && profile?.person && cleanText(record.interviewee) === profile.person;
   });
 }
 
-function readTaskTemplates() {
+async function readTaskTemplates() {
+  if (USE_DATABASE) {
+    const result = await dbQuery("SELECT data FROM task_templates WHERE key = $1", ["default"]);
+    return result.rows[0]?.data || [];
+  }
+
+  return readTaskTemplatesFile();
+}
+
+function readTaskTemplatesFile() {
   try {
     return JSON.parse(readFileSync(TASK_TEMPLATES_FILE, "utf8"));
   } catch {
@@ -449,7 +665,12 @@ function readTaskTemplates() {
   }
 }
 
-function readCustomTasks() {
+async function readCustomTasks() {
+  if (USE_DATABASE) {
+    const result = await dbQuery("SELECT data FROM custom_tasks ORDER BY created_at ASC");
+    return result.rows.map((row) => row.data);
+  }
+
   try {
     const tasks = JSON.parse(readFileSync(CUSTOM_TASKS_FILE, "utf8"));
     return Array.isArray(tasks) ? tasks : [];
@@ -462,9 +683,9 @@ function writeCustomTasks(tasks) {
   writeJson(CUSTOM_TASKS_FILE, tasks);
 }
 
-function customTasksForPhone(phoneValue = "") {
+async function customTasksForPhone(phoneValue = "") {
   const phone = normalizePhone(phoneValue);
-  const tasks = readCustomTasks().sort((a, b) => {
+  const tasks = (await readCustomTasks()).sort((a, b) => {
     const aTime = a.createdAt || "";
     const bTime = b.createdAt || "";
     return aTime.localeCompare(bTime);
@@ -473,10 +694,10 @@ function customTasksForPhone(phoneValue = "") {
   return tasks.filter((task) => normalizePhone(task.phone) === phone);
 }
 
-function findTaskProfileByPhone(phoneValue = "") {
+async function findTaskProfileByPhone(phoneValue = "") {
   const phone = normalizePhone(phoneValue);
   if (!phone) return null;
-  const templates = readTaskTemplates();
+  const templates = await readTaskTemplates();
   return (templates.people || []).find((group) => normalizePhone(group.phone) === phone) || null;
 }
 
@@ -574,8 +795,8 @@ function toCsv(records) {
   for (const record of records) {
     rows.push(
       columns.map(([key]) => {
-        if (key === "tags") return record.tags.join("、");
-        if (key === "attachments") return record.attachments.map((file) => file.originalName).join("、");
+        if (key === "tags") return (record.tags || []).join("、");
+        if (key === "attachments") return (record.attachments || []).map((file) => file.originalName).join("、");
         return record[key] || "";
       })
     );
