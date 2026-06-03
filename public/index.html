@@ -1,0 +1,3098 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>立傑內部知識庫資料收集台</title>
+  <style>
+    :root {
+      --ink: #18212b;
+      --muted: #637181;
+      --line: #d8dee7;
+      --panel: #ffffff;
+      --soft: #f4f6f8;
+      --field: #fbfcfd;
+      --blue: #24547a;
+      --green: #1f6f5f;
+      --amber: #a86a12;
+      --red: #a23d3d;
+      --shadow: 0 18px 46px rgba(19, 32, 45, 0.1);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    [hidden] {
+      display: none !important;
+    }
+
+    body {
+      margin: 0;
+      color: var(--ink);
+      background:
+        linear-gradient(90deg, rgba(36, 84, 122, 0.04) 1px, transparent 1px),
+        linear-gradient(0deg, rgba(36, 84, 122, 0.04) 1px, transparent 1px),
+        #eef2f4;
+      background-size: 22px 22px;
+      font-family: "Microsoft JhengHei", "Noto Sans TC", "PingFang TC", Georgia, sans-serif;
+    }
+
+    button,
+    input,
+    select,
+    textarea {
+      font: inherit;
+    }
+
+    button {
+      border: 0;
+      cursor: pointer;
+    }
+
+    .app {
+      min-height: 100vh;
+      display: grid;
+      grid-template-columns: 286px 1fr;
+    }
+
+    .sidebar {
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      padding: 24px 18px;
+      color: #e9f1f5;
+      background: #183040;
+      overflow-y: auto;
+    }
+
+    .brand {
+      padding: 0 6px 20px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.14);
+    }
+
+    .brand small {
+      display: block;
+      color: #a7bac7;
+      font-size: 12px;
+      letter-spacing: 1.5px;
+      margin-bottom: 8px;
+    }
+
+    .brand h1 {
+      margin: 0;
+      font-size: 24px;
+      line-height: 1.22;
+      letter-spacing: 0;
+    }
+
+    .side-section {
+      margin-top: 22px;
+    }
+
+    .side-section h2 {
+      margin: 0 6px 10px;
+      color: #a7bac7;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 1.3px;
+    }
+
+    .side-note {
+      margin: 0 6px 10px;
+      color: #c6d4dc;
+      font-size: 12px;
+      line-height: 1.55;
+    }
+
+    .category-list {
+      display: grid;
+      gap: 7px;
+    }
+
+    .category-button {
+      width: 100%;
+      min-height: 42px;
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 10px;
+      align-items: center;
+      padding: 10px 11px;
+      border-radius: 7px;
+      color: #dbe8ee;
+      background: transparent;
+      text-align: left;
+    }
+
+    .category-button:hover,
+    .category-button.active {
+      background: rgba(255, 255, 255, 0.1);
+    }
+
+    .category-button span:first-child {
+      font-size: 13px;
+      line-height: 1.35;
+    }
+
+    .count {
+      min-width: 26px;
+      padding: 2px 7px;
+      border-radius: 99px;
+      background: rgba(255, 255, 255, 0.16);
+      color: #ffffff;
+      font-size: 12px;
+      text-align: center;
+    }
+
+    .main {
+      padding: 28px;
+    }
+
+    .topbar {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 16px;
+      align-items: center;
+      margin-bottom: 18px;
+    }
+
+    .title-block h2 {
+      margin: 0;
+      font-size: 26px;
+      letter-spacing: 0;
+    }
+
+    .title-block p {
+      margin: 6px 0 0;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .actions {
+      display: flex;
+      gap: 9px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    .tabs {
+      display: flex;
+      gap: 8px;
+      margin: 0 0 18px;
+      padding: 5px;
+      border: 1px solid var(--line);
+      border-radius: 9px;
+      background: rgba(255, 255, 255, 0.72);
+      width: fit-content;
+    }
+
+    .tab-button {
+      min-height: 36px;
+      padding: 8px 13px;
+      border-radius: 7px;
+      color: #355067;
+      background: transparent;
+      font-weight: 800;
+    }
+
+    .tab-button.active {
+      color: #ffffff;
+      background: var(--blue);
+      box-shadow: 0 8px 18px rgba(36, 84, 122, 0.18);
+    }
+
+    .tab-panel[hidden] {
+      display: none;
+    }
+
+    .button {
+      min-height: 38px;
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      padding: 8px 12px;
+      border-radius: 7px;
+      color: #fff;
+      background: var(--blue);
+      font-weight: 700;
+      text-decoration: none;
+      white-space: nowrap;
+    }
+
+    .button.secondary {
+      color: #1d3448;
+      background: #dfe8ee;
+    }
+
+    .button.danger {
+      background: var(--red);
+    }
+
+    .login-screen {
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      padding: 24px;
+      background:
+        linear-gradient(90deg, rgba(36, 84, 122, 0.04) 1px, transparent 1px),
+        linear-gradient(0deg, rgba(36, 84, 122, 0.04) 1px, transparent 1px),
+        #eef2f4;
+      background-size: 22px 22px;
+    }
+
+    .login-card {
+      width: min(520px, 100%);
+      padding: 28px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #ffffff;
+      box-shadow: var(--shadow);
+    }
+
+    .login-card small {
+      display: block;
+      margin-bottom: 10px;
+      color: #547087;
+      font-size: 12px;
+      font-weight: 900;
+      letter-spacing: 1.4px;
+    }
+
+    .login-card h1 {
+      margin: 0;
+      color: #142332;
+      font-size: 28px;
+      letter-spacing: 0;
+    }
+
+    .login-card p {
+      margin: 8px 0 18px;
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.65;
+    }
+
+    .login-form {
+      display: grid;
+      gap: 12px;
+    }
+
+    .login-message {
+      min-height: 18px;
+      color: var(--red);
+      font-size: 13px;
+      font-weight: 800;
+    }
+
+    .user-strip {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+      color: #30465a;
+      font-size: 13px;
+      font-weight: 800;
+    }
+
+    .user-pill {
+      padding: 7px 9px;
+      border: 1px solid #ccd8e2;
+      border-radius: 7px;
+      background: #f8fafb;
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: minmax(0, 1.08fr) minmax(340px, 0.92fr);
+      gap: 16px;
+      align-items: start;
+    }
+
+    .panel {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--panel);
+      box-shadow: var(--shadow);
+    }
+
+    .form-page {
+      min-width: 0;
+    }
+
+    .history-panel {
+      position: sticky;
+      top: 28px;
+      max-height: calc(100vh - 56px);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .panel-header {
+      padding: 16px 18px 12px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .panel-header h3 {
+      margin: 0;
+      font-size: 17px;
+    }
+
+    .panel-header p {
+      margin: 5px 0 0;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .form {
+      padding: 16px 18px 18px;
+      display: grid;
+      gap: 12px;
+    }
+
+    .section-title {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: #173d5d;
+      font-size: 12px;
+      font-weight: 900;
+    }
+
+    .section-title::after {
+      content: "";
+      height: 1px;
+      flex: 1;
+      background: var(--line);
+    }
+
+    .sop-periods {
+      display: grid;
+      gap: 12px;
+    }
+
+    .period-card {
+      display: grid;
+      gap: 10px;
+      padding: 12px;
+      border: 1px solid #d9e1e8;
+      border-radius: 8px;
+      background: #fbfcfd;
+    }
+
+    .period-card-head {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 10px;
+      padding-bottom: 6px;
+      border-bottom: 1px solid #e4e9ee;
+    }
+
+    .period-card-head h4 {
+      margin: 0;
+      color: #173d5d;
+      font-size: 14px;
+    }
+
+    .period-card-head span {
+      color: var(--muted);
+      font-size: 12px;
+      text-align: right;
+    }
+
+    .selected-task-box {
+      padding: 12px;
+      border: 1px solid #bdd6ca;
+      border-radius: 8px;
+      background: #f3faf6;
+    }
+
+    .selected-task-box strong {
+      display: block;
+      color: #164d3e;
+      font-size: 14px;
+      margin-bottom: 4px;
+    }
+
+    .selected-task-box p {
+      margin: 0;
+      color: #4f6b60;
+      font-size: 12px;
+      line-height: 1.5;
+    }
+
+    .knowledge-entry {
+      display: grid;
+      gap: 12px;
+      padding-top: 4px;
+    }
+
+    .field {
+      display: grid;
+      gap: 5px;
+    }
+
+    .field.two {
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    label {
+      color: #2d3d4b;
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .label-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .help-button {
+      width: 20px;
+      height: 20px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border: 1px solid #b8c5cf;
+      border-radius: 50%;
+      color: #24547a;
+      background: #eef5f8;
+      font-size: 12px;
+      font-weight: 800;
+      line-height: 1;
+    }
+
+    .help-button:hover,
+    .help-button[aria-expanded="true"] {
+      color: #ffffff;
+      background: var(--blue);
+      border-color: var(--blue);
+    }
+
+    .help-popover {
+      margin-top: 8px;
+      padding: 10px 11px;
+      border: 1px solid #c8d4de;
+      border-radius: 7px;
+      background: #f8fbfc;
+      box-shadow: 0 10px 28px rgba(24, 33, 43, 0.08);
+      color: #2f3f4e;
+      font-size: 12px;
+      line-height: 1.55;
+    }
+
+    .help-popover[hidden] {
+      display: none;
+    }
+
+    .help-popover dl {
+      margin: 0;
+      display: grid;
+      gap: 6px;
+    }
+
+    .help-popover div {
+      display: grid;
+      grid-template-columns: 76px 1fr;
+      gap: 8px;
+      align-items: start;
+    }
+
+    .help-popover dt {
+      color: #173d5d;
+      font-weight: 800;
+    }
+
+    .help-popover dd {
+      margin: 0;
+      color: #435363;
+    }
+
+    input,
+    select,
+    textarea {
+      width: 100%;
+      min-height: 38px;
+      padding: 9px 10px;
+      border: 1px solid #cfd7e1;
+      border-radius: 7px;
+      color: var(--ink);
+      background: var(--field);
+      outline: none;
+    }
+
+    textarea {
+      min-height: 92px;
+      resize: vertical;
+    }
+
+    #rawContent {
+      min-height: 110px;
+    }
+
+    #dailySop,
+    #weeklySop,
+    #monthlySop,
+    #specialSop {
+      min-height: 130px;
+    }
+    }
+
+    input:focus,
+    select:focus,
+    textarea:focus {
+      border-color: #577f9e;
+      box-shadow: 0 0 0 3px rgba(36, 84, 122, 0.12);
+    }
+
+    .file-note {
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .advanced-fields {
+      display: grid;
+      gap: 12px;
+      padding: 10px 0 0;
+      border-top: 1px solid var(--line);
+    }
+
+    .advanced-fields summary {
+      min-height: 38px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      color: #173d5d;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 900;
+      list-style: none;
+    }
+
+    .advanced-fields summary::-webkit-details-marker {
+      display: none;
+    }
+
+    .advanced-fields summary::after {
+      content: "+";
+      width: 24px;
+      height: 24px;
+      flex: 0 0 24px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 50%;
+      color: #24547a;
+      background: #e8eef2;
+      font-weight: 900;
+    }
+
+    .advanced-fields[open] summary::after {
+      content: "-";
+    }
+
+    .advanced-fields summary small {
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 700;
+      text-align: right;
+    }
+
+    .advanced-fields[open] {
+      padding-bottom: 4px;
+    }
+
+    .submit-row {
+      display: flex;
+      gap: 9px;
+      align-items: center;
+      justify-content: space-between;
+      padding-top: 4px;
+    }
+
+    .message {
+      min-height: 18px;
+      color: var(--green);
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .edit-banner {
+      display: none;
+      margin: 0 18px;
+      padding: 10px 12px;
+      border: 1px solid #d8c8a3;
+      border-radius: 7px;
+      background: #fff8e9;
+      color: #6d470d;
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .edit-banner.active {
+      display: block;
+    }
+
+    .existing-attachments {
+      display: none;
+      gap: 6px;
+      flex-wrap: wrap;
+      margin-top: 7px;
+    }
+
+    .existing-attachments.active {
+      display: flex;
+    }
+
+    .template-box {
+      display: grid;
+      gap: 10px;
+      padding: 12px;
+      border: 1px solid #cbd8e2;
+      border-radius: 8px;
+      background: #f7fafb;
+    }
+
+    .template-box[hidden] {
+      display: none;
+    }
+
+    .template-head {
+      display: grid;
+      gap: 4px;
+    }
+
+    .template-head strong {
+      color: #173d5d;
+      font-size: 13px;
+    }
+
+    .template-head span {
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .template-toolbar {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .custom-task-panel {
+      display: grid;
+      gap: 9px;
+      padding: 10px;
+      border: 1px solid #d9e2e8;
+      border-radius: 7px;
+      background: #ffffff;
+    }
+
+    .custom-task-head {
+      display: grid;
+      gap: 3px;
+    }
+
+    .custom-task-head strong {
+      color: #173d5d;
+      font-size: 13px;
+    }
+
+    .custom-task-head span,
+    .custom-task-message {
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.45;
+    }
+
+    .custom-task-grid {
+      display: grid;
+      grid-template-columns: 118px minmax(150px, 1fr) minmax(190px, 1fr) auto;
+      gap: 8px;
+      align-items: end;
+    }
+
+    .custom-task-purpose {
+      min-height: 64px;
+    }
+
+    .role-overview-box,
+    .admin-role-overview {
+      display: grid;
+      gap: 10px;
+      padding: 12px;
+      border: 1px solid #cbd8e2;
+      border-radius: 8px;
+      background: #f8fbfc;
+    }
+
+    .role-overview-box[hidden],
+    .admin-role-overview[hidden] {
+      display: none;
+    }
+
+    .role-overview-head,
+    .admin-role-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: start;
+    }
+
+    .role-overview-head strong,
+    .admin-role-head strong {
+      color: #173d5d;
+      font-size: 14px;
+    }
+
+    .role-overview-head span,
+    .admin-role-head span {
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.45;
+      text-align: right;
+    }
+
+    .role-responsibilities {
+      margin: 0;
+      padding-left: 18px;
+      color: #3f4f5c;
+      font-size: 13px;
+      line-height: 1.55;
+    }
+
+    .role-tools {
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.5;
+    }
+
+    .admin-role-overview {
+      border-width: 0 0 1px;
+      border-radius: 0;
+      background: #fbfcfd;
+    }
+
+    .admin-role-list {
+      display: grid;
+      gap: 9px;
+      max-height: 320px;
+      overflow: auto;
+    }
+
+    .role-scope-card {
+      display: grid;
+      gap: 8px;
+      padding: 10px;
+      border: 1px solid #d8dee7;
+      border-radius: 7px;
+      background: #ffffff;
+    }
+
+    .role-scope-card h4 {
+      margin: 0;
+      color: #17202b;
+      font-size: 14px;
+    }
+
+    .task-chip.custom-task {
+      border-color: #b9d8ca;
+      background: #f8fcfa;
+    }
+
+    .task-chip-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+
+    .period-group {
+      display: grid;
+      gap: 7px;
+      margin-top: 8px;
+    }
+
+    .period-title {
+      color: #2d3d4b;
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .task-chip {
+      display: grid;
+      gap: 6px;
+      padding: 9px 10px;
+      border: 1px solid #d9e0e7;
+      border-radius: 7px;
+      background: #ffffff;
+    }
+
+    .task-chip h4 {
+      margin: 0;
+      color: #17202b;
+      font-size: 13px;
+    }
+
+    .task-chip p {
+      margin: 0;
+      color: #526475;
+      font-size: 12px;
+      line-height: 1.45;
+    }
+
+    .task-chip button {
+      justify-self: start;
+      min-height: 30px;
+      padding: 5px 8px;
+      border-radius: 6px;
+      color: #1d3448;
+      background: #dfe8ee;
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .filters {
+      display: grid;
+      grid-template-columns: 1.2fr 0.9fr 0.9fr;
+      gap: 10px;
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--line);
+      background: #f8fafb;
+    }
+
+    .records {
+      display: grid;
+      gap: 0;
+    }
+
+    .admin-task-overview {
+      display: grid;
+      gap: 0;
+      border-bottom: 1px solid var(--line);
+      background: #fbfcfd;
+    }
+
+    .admin-task-overview[hidden] {
+      display: none;
+    }
+
+    .admin-task-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--line);
+      color: #173d5d;
+      font-size: 13px;
+      font-weight: 800;
+    }
+
+    .admin-task-head span {
+      color: var(--muted);
+      text-align: right;
+    }
+
+    .admin-task-list {
+      max-height: 360px;
+      overflow: auto;
+    }
+
+    .admin-task-record {
+      background: #ffffff;
+    }
+
+    .history-panel .records {
+      overflow: auto;
+    }
+
+    .record {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 14px;
+      padding: 15px 16px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .history-panel .record {
+      grid-template-columns: 1fr;
+      gap: 10px;
+    }
+
+    .record.editing {
+      background: #f5faf8;
+      box-shadow: inset 4px 0 0 var(--green);
+    }
+
+    .record:last-child {
+      border-bottom: 0;
+    }
+
+    .record h4 {
+      margin: 0 0 6px;
+      font-size: 16px;
+    }
+
+    .record-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-bottom: 8px;
+    }
+
+    .tag {
+      display: inline-flex;
+      align-items: center;
+      min-height: 24px;
+      padding: 3px 7px;
+      border-radius: 5px;
+      background: #e8eef2;
+      color: #2c4559;
+      font-size: 12px;
+    }
+
+    .tag.source {
+      background: #e6f0ed;
+      color: #1f5f52;
+    }
+
+    .tag.status {
+      background: #fff2dc;
+      color: #7b4a08;
+    }
+
+    .summary {
+      margin: 0;
+      color: #3f4f5c;
+      font-size: 13px;
+      white-space: pre-wrap;
+    }
+
+    .attachment-list {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      margin-top: 9px;
+    }
+
+    .attachment-list a {
+      color: var(--blue);
+      font-size: 12px;
+      font-weight: 700;
+      text-decoration: none;
+    }
+
+    .record-actions {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      align-items: start;
+    }
+
+    .history-panel .record-actions {
+      flex-direction: row;
+      flex-wrap: wrap;
+    }
+
+    .record details {
+      margin-top: 10px;
+      padding: 9px 10px;
+      border: 1px solid #d8dee7;
+      border-radius: 7px;
+      background: #fbfcfd;
+    }
+
+    .record summary {
+      color: #24547a;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 800;
+    }
+
+    .detail-grid {
+      display: grid;
+      gap: 8px;
+      margin-top: 9px;
+    }
+
+    .detail-block strong {
+      display: block;
+      margin-bottom: 3px;
+      color: #263d55;
+      font-size: 12px;
+    }
+
+    .detail-block p {
+      margin: 0;
+      color: #3f4f5c;
+      font-size: 13px;
+      white-space: pre-wrap;
+    }
+
+    .empty {
+      padding: 38px 16px;
+      color: var(--muted);
+      text-align: center;
+    }
+
+    @media (max-width: 1040px) {
+      .app {
+        grid-template-columns: 1fr;
+      }
+
+      .sidebar {
+        position: static;
+        height: auto;
+      }
+
+      .layout {
+        grid-template-columns: 1fr;
+      }
+
+      .history-panel {
+        position: static;
+        max-height: none;
+      }
+    }
+
+    @media (max-width: 720px) {
+      .main {
+        padding: 18px;
+      }
+
+      .topbar,
+      .filters,
+      .field.two,
+      .record {
+        grid-template-columns: 1fr;
+      }
+
+      .actions,
+      .submit-row,
+      .template-toolbar,
+      .custom-task-grid {
+        grid-template-columns: 1fr;
+        justify-content: flex-start;
+      }
+
+      .advanced-fields summary {
+        align-items: flex-start;
+      }
+
+      .advanced-fields summary small {
+        display: none;
+      }
+    }
+  </style>
+</head>
+<body>
+  <section class="login-screen" id="loginScreen">
+    <div class="login-card">
+      <small>LIJIE SOP LOGIN</small>
+      <h1>電話號碼登入</h1>
+      <p>輸入公司問卷中的電話號碼，系統會自動載入你在 JSON 裡的歷史任務，並帶出已填過的 SOP 內容。</p>
+      <form class="login-form" id="loginForm">
+        <div class="field">
+          <label for="loginPhone">電話號碼</label>
+          <input id="loginPhone" name="loginPhone" inputmode="tel" autocomplete="tel" placeholder="例：0912345678" required>
+        </div>
+        <button class="button" type="submit">登入並載入任務</button>
+        <div class="login-message" id="loginMessage"></div>
+      </form>
+    </div>
+  </section>
+
+  <div class="app" id="appShell" hidden>
+    <aside class="sidebar">
+      <div class="brand">
+        <small>LIJIE KNOWLEDGE INTAKE</small>
+        <h1>內部 SOP<br>自填工作台</h1>
+      </div>
+      <section class="side-section">
+        <h2>資料來源分類</h2>
+        <p class="side-note">資料來源分類會依 JSON 與新增任務內容統計任務數；點分類後，只顯示該分類任務並可新增知識庫。</p>
+        <div class="category-list" id="categoryList"></div>
+      </section>
+      <section class="side-section">
+        <h2>建置提醒</h2>
+        <p style="margin: 0 6px; color: #c6d4dc; font-size: 13px; line-height: 1.6;">
+          每位同仁依自己的每日、每週、每月、特殊任務填寫 SOP，並把各期間常遇到的問題記錄下來。
+        </p>
+      </section>
+    </aside>
+
+    <main class="main">
+      <div class="topbar">
+        <div class="title-block">
+          <h2>SOP 自填工作台</h2>
+          <p>參考歷史任務，依每日、每週、每月與特殊任務補完整 SOP。</p>
+        </div>
+        <div class="actions">
+          <div class="user-strip">
+            <span class="user-pill" id="currentUserLabel"></span>
+            <button class="button secondary" id="adminToggleButton" type="button" hidden>前台登入</button>
+            <button class="button secondary" id="logoutButton" type="button">登出</button>
+          </div>
+          <button class="button" id="newRecordButton" type="button">＋ 新增空白</button>
+          <a class="button secondary" id="exportCsvLink" href="/api/export.csv" hidden>匯出 CSV</a>
+          <a class="button secondary" id="exportJsonLink" href="/api/export.json" hidden>匯出 JSON</a>
+        </div>
+      </div>
+
+      <div class="layout">
+        <section class="panel form-page" id="formTab">
+          <div class="panel-header">
+            <h3 id="formPanelTitle">新增知識庫</h3>
+            <p id="formPanelHint">先從歷史任務選一項，再新增客戶問法與標準答案。</p>
+          </div>
+          <div class="edit-banner" id="editBanner">正在編輯既有 SOP，儲存後會更新原資料。</div>
+          <form class="form" id="recordForm">
+            <input id="phone" name="phone" type="hidden">
+            <input id="title" name="title" type="hidden">
+            <input id="department" name="department" type="hidden">
+            <input id="role" name="role" type="hidden">
+            <input id="interviewee" name="interviewee" type="hidden">
+            <input id="summary" name="summary" type="hidden">
+            <input id="rawContent" name="rawContent" type="hidden">
+            <input id="taskId" name="taskId" type="hidden">
+            <input id="taskName" name="taskName" type="hidden">
+            <input id="taskPeriod" name="taskPeriod" type="hidden">
+            <select id="sourceCategory" name="sourceCategory" hidden></select>
+            <select id="knowledgeType" name="knowledgeType" hidden></select>
+
+            <datalist id="departmentOptions"></datalist>
+            <datalist id="roleOptions"></datalist>
+            <datalist id="intervieweeOptions"></datalist>
+            <datalist id="reviewOwnerOptions">
+              <option value="行銷主管"></option>
+              <option value="客服主管"></option>
+              <option value="業務主管"></option>
+              <option value="工程主管"></option>
+              <option value="維修主管"></option>
+              <option value="財務主管"></option>
+              <option value="倉庫主管"></option>
+              <option value="總經理/老闆"></option>
+            </datalist>
+
+            <div class="role-overview-box" id="roleOverviewBox" hidden>
+              <div class="role-overview-head">
+                <strong id="roleOverviewTitle">職位負責範圍</strong>
+                <span id="roleOverviewSummary">幫助新人快速了解這個職位需要做的事情</span>
+              </div>
+              <div class="record-meta" id="roleOverviewStats"></div>
+              <ul class="role-responsibilities" id="roleOverviewResponsibilities"></ul>
+              <div class="role-tools" id="roleOverviewTools"></div>
+              <div class="file-note">後續新增任務會自動併入此職位範圍。</div>
+            </div>
+
+            <div class="template-box" id="templateBox" hidden>
+              <div class="template-head">
+                <strong>歷史任務參考</strong>
+                <span>歷史任務只供查看，不會被修改。請在任務旁點「幫這項任務添加知識庫」，一個客戶問法新增一筆。</span>
+              </div>
+              <div class="custom-task-panel" id="customTaskPanel">
+                <div class="custom-task-head">
+                  <strong>新增自己的任務</strong>
+                  <span>JSON 沒有的每日、每週、每月、突發或不定期任務，可以先補到這裡，再替任務新增多筆知識庫。</span>
+                </div>
+                <div class="custom-task-grid">
+                  <div class="field">
+                    <label for="customTaskPeriod">期間</label>
+                    <select id="customTaskPeriod">
+                      <option value="每日">每日</option>
+                      <option value="每週">每週</option>
+                      <option value="每月">每月</option>
+                      <option value="突發">突發</option>
+                      <option value="不定期">不定期</option>
+                    </select>
+                  </div>
+                  <div class="field">
+                    <label for="customTaskName">任務名稱</label>
+                    <input id="customTaskName" placeholder="例：月底保固卡核對、臨時客訴追蹤">
+                  </div>
+                  <div class="field">
+                    <label for="customTaskSourceCategory">資料來源分類</label>
+                    <select id="customTaskSourceCategory"></select>
+                  </div>
+                  <button class="button secondary" id="addCustomTaskButton" type="button">新增任務</button>
+                </div>
+                <div class="field">
+                  <label for="customTaskPurpose">任務說明</label>
+                  <textarea class="custom-task-purpose" id="customTaskPurpose" placeholder="補充這項任務通常在什麼情況發生、會用到哪些資料或工具"></textarea>
+                </div>
+                <div class="custom-task-message" id="customTaskMessage"></div>
+              </div>
+              <select id="templateSelector" hidden></select>
+              <div id="templateTasks"></div>
+            </div>
+
+            <div class="selected-task-box" id="selectedTaskBox" hidden>
+              <div>
+                <strong id="selectedTaskTitle">尚未選擇任務</strong>
+                <p id="selectedTaskMeta">請先從上方歷史任務選擇要補充知識庫的任務。</p>
+              </div>
+            </div>
+
+            <section class="knowledge-entry" id="knowledgeEntry" hidden>
+              <div class="section-title">新增知識庫</div>
+              <div class="field two">
+                <div class="field">
+                  <label for="status">知識庫狀態</label>
+                  <select id="status" name="status"></select>
+                </div>
+                <div class="field">
+                  <label for="knowledgeVisibility">知識庫類型</label>
+                  <select id="knowledgeVisibility" name="knowledgeVisibility">
+                    <option value="通用知識庫">通用知識庫</option>
+                    <option value="內部知識庫">內部知識庫</option>
+                    <option value="外部知識庫">外部知識庫</option>
+                  </select>
+                </div>
+                <div class="field">
+                  <label for="reviewRequirement">人工確認</label>
+                  <select id="reviewRequirement" name="reviewRequirement">
+                    <option value="需人工確認">需人工確認</option>
+                    <option value="不需人工確認">不需人工確認</option>
+                    <option value="條件式人工確認">條件式人工確認</option>
+                  </select>
+                </div>
+              </div>
+              <div class="field" id="reviewOwnerField" hidden>
+                <label for="reviewOwner">給誰確認?</label>
+                <input id="reviewOwner" name="reviewOwner" list="reviewOwnerOptions" placeholder="例：行銷主管、客服主管、工程主管，或直接填指定人員">
+              </div>
+              <div class="field">
+                <label for="knowledgeQuestion">客戶問題/問法</label>
+                <input id="knowledgeQuestion" name="knowledgeQuestion" placeholder="例：客人問 A 型號保固多久" required disabled>
+              </div>
+
+              <div class="field">
+                <label for="applicableModel">適用型號/情境</label>
+                <input id="applicableModel" name="applicableModel" placeholder="例：A 型號、B 型號、過保、舊換新" disabled>
+              </div>
+
+              <div class="field">
+                <label for="knowledgeAnswer">標準答案</label>
+                <textarea id="knowledgeAnswer" name="knowledgeAnswer" placeholder="請寫可以給客服或 AI 使用的標準回答。" required disabled></textarea>
+              </div>
+
+              <div class="field">
+                <label for="answerSource">答案來源</label>
+                <textarea id="answerSource" name="answerSource" placeholder="例：保固卡、報價表、主管確認、產品手冊、Google Sheet。" disabled></textarea>
+              </div>
+
+              <div class="field">
+                <label for="troubleshootingSteps">例外/判斷規則</label>
+                <textarea id="troubleshootingSteps" name="troubleshootingSteps" placeholder="例：超過保固不可直接回覆免費；需要序號或購買日期才能判斷。" disabled></textarea>
+              </div>
+
+              <div class="field">
+                <label for="tags">標籤</label>
+                <input id="tags" name="tags" placeholder="例：A型號, 保固, 客服, 報價" disabled>
+              </div>
+
+              <div class="field">
+                <label for="attachments">附件</label>
+                <input id="attachments" name="attachments" type="file" multiple disabled>
+                <div class="file-note">可補充保固卡、報價表、截圖或 SOP 文件。</div>
+                <div class="existing-attachments" id="existingAttachments"></div>
+              </div>
+
+              <div class="field">
+                <label for="notes">內部備註</label>
+                <textarea id="notes" name="notes" placeholder="例：需要主管確認後才能給 AI 自動回覆。" disabled></textarea>
+              </div>
+
+              <input id="knowledgeUpdatedDate" name="knowledgeUpdatedDate" type="hidden">
+            </section>
+
+
+            <div class="submit-row" id="submitRow" hidden>
+              <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                <button class="button" id="submitButton" type="submit" disabled>＋ 新增這筆知識庫</button>
+                <button class="button secondary" id="cancelEditButton" type="button" hidden>取消編輯</button>
+              </div>
+              <div class="message" id="message"></div>
+            </div>
+          </form>
+        </section>
+
+        <section class="panel history-panel" id="historyTab">
+          <div class="panel-header">
+            <h3>已填 SOP</h3>
+            <p><span id="recordCount">0</span> 筆 SOP，可查看完整內容並重新編輯。</p>
+          </div>
+          <div class="filters">
+            <input id="searchInput" placeholder="搜尋標題、內容、標籤、部門">
+            <select id="filterKnowledge"></select>
+            <select id="filterStatus"></select>
+          </div>
+          <div class="admin-role-overview" id="adminRoleOverview" hidden>
+            <div class="admin-role-head">
+              <strong>全公司職位負責範圍總覽</strong>
+              <span id="adminRoleSummary">0 個職位</span>
+            </div>
+            <div class="admin-role-list" id="adminRoleList"></div>
+          </div>
+          <div class="admin-task-overview" id="adminTaskOverview" hidden>
+            <div class="admin-task-head">
+              <strong>JSON 與新增任務總覽</strong>
+              <span id="adminTaskSummary">0 項任務</span>
+            </div>
+            <div class="admin-task-list" id="adminTaskList"></div>
+          </div>
+          <div class="records" id="records"></div>
+        </section>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    const categories = [
+      ["全部資料", ""],
+      ["產品說明書、安裝手冊", "型號規格、設定教學、APP 操作、安裝限制"],
+      ["維修表、報修單、維修總表", "常見故障、故障原因、處理方式、需不需要派工"],
+      ["客服/工程/維修人員經驗", "常見問答、判斷邏輯、客戶話術"],
+      ["保固卡、報價表、收費規則", "保固判斷、過保報價、舊換新規則"],
+      ["ERP、大二、Google Sheet 欄位", "訂單、派工、完工、序號、庫存查詢方式"],
+      ["公司內部 SOP、表單", "報修流程、派工流程、請款流程、權責分工"]
+    ];
+
+    const knowledgeTypes = [
+      "型號規格、設定教學、APP 操作、安裝限制",
+      "常見故障、故障原因、處理方式、需不需要派工",
+      "常見問答、判斷邏輯、客戶話術",
+      "保固判斷、過保報價、舊換新規則",
+      "訂單、派工、完工、序號、庫存查詢方式",
+      "報修流程、派工流程、請款流程、權責分工"
+    ];
+
+    const recordStatuses = [
+      "待整理",
+      "待主管確認",
+      "須補資料",
+      "不可自動回復"
+    ];
+
+    const state = {
+      records: [],
+      phone: "",
+      profile: null,
+      adminMode: false,
+      category: "",
+      search: "",
+      knowledge: "",
+      status: "",
+      activeTab: "form",
+      editingId: null,
+      selectedTask: null,
+      taskTemplates: { people: [], roles: [] },
+      customTasks: [],
+      templateCandidates: [],
+      selectedTemplateKey: ""
+    };
+
+    const els = {
+      loginScreen: document.querySelector("#loginScreen"),
+      appShell: document.querySelector("#appShell"),
+      loginForm: document.querySelector("#loginForm"),
+      loginPhone: document.querySelector("#loginPhone"),
+      loginMessage: document.querySelector("#loginMessage"),
+      currentUserLabel: document.querySelector("#currentUserLabel"),
+      adminToggleButton: document.querySelector("#adminToggleButton"),
+      logoutButton: document.querySelector("#logoutButton"),
+      exportCsvLink: document.querySelector("#exportCsvLink"),
+      exportJsonLink: document.querySelector("#exportJsonLink"),
+      categoryList: document.querySelector("#categoryList"),
+      formTab: document.querySelector("#formTab"),
+      historyTab: document.querySelector("#historyTab"),
+      newRecordButton: document.querySelector("#newRecordButton"),
+      formPanelTitle: document.querySelector("#formPanelTitle"),
+      formPanelHint: document.querySelector("#formPanelHint"),
+      editBanner: document.querySelector("#editBanner"),
+      departmentOptions: document.querySelector("#departmentOptions"),
+      roleOptions: document.querySelector("#roleOptions"),
+      intervieweeOptions: document.querySelector("#intervieweeOptions"),
+      roleOverviewBox: document.querySelector("#roleOverviewBox"),
+      roleOverviewTitle: document.querySelector("#roleOverviewTitle"),
+      roleOverviewSummary: document.querySelector("#roleOverviewSummary"),
+      roleOverviewStats: document.querySelector("#roleOverviewStats"),
+      roleOverviewResponsibilities: document.querySelector("#roleOverviewResponsibilities"),
+      roleOverviewTools: document.querySelector("#roleOverviewTools"),
+      templateBox: document.querySelector("#templateBox"),
+      templateSelector: document.querySelector("#templateSelector"),
+      templateTasks: document.querySelector("#templateTasks"),
+      customTaskPeriod: document.querySelector("#customTaskPeriod"),
+      customTaskName: document.querySelector("#customTaskName"),
+      customTaskSourceCategory: document.querySelector("#customTaskSourceCategory"),
+      customTaskPurpose: document.querySelector("#customTaskPurpose"),
+      addCustomTaskButton: document.querySelector("#addCustomTaskButton"),
+      customTaskMessage: document.querySelector("#customTaskMessage"),
+      selectedTaskBox: document.querySelector("#selectedTaskBox"),
+      selectedTaskTitle: document.querySelector("#selectedTaskTitle"),
+      selectedTaskMeta: document.querySelector("#selectedTaskMeta"),
+      knowledgeEntry: document.querySelector("#knowledgeEntry"),
+      reviewOwnerField: document.querySelector("#reviewOwnerField"),
+      reviewOwner: document.querySelector("#reviewOwner"),
+      statusSelect: document.querySelector("#status"),
+      sourceCategory: document.querySelector("#sourceCategory"),
+      knowledgeType: document.querySelector("#knowledgeType"),
+      filterKnowledge: document.querySelector("#filterKnowledge"),
+      filterStatus: document.querySelector("#filterStatus"),
+      statusHelp: document.querySelector("#statusHelp"),
+      statusHelpButton: document.querySelector("#statusHelpButton"),
+      searchInput: document.querySelector("#searchInput"),
+      adminRoleOverview: document.querySelector("#adminRoleOverview"),
+      adminRoleSummary: document.querySelector("#adminRoleSummary"),
+      adminRoleList: document.querySelector("#adminRoleList"),
+      adminTaskOverview: document.querySelector("#adminTaskOverview"),
+      adminTaskSummary: document.querySelector("#adminTaskSummary"),
+      adminTaskList: document.querySelector("#adminTaskList"),
+      records: document.querySelector("#records"),
+      recordCount: document.querySelector("#recordCount"),
+      form: document.querySelector("#recordForm"),
+      submitRow: document.querySelector("#submitRow"),
+      submitButton: document.querySelector("#submitButton"),
+      cancelEditButton: document.querySelector("#cancelEditButton"),
+      existingAttachments: document.querySelector("#existingAttachments"),
+      message: document.querySelector("#message")
+    };
+
+    init();
+
+    function init() {
+      els.sourceCategory.append(new Option("請選擇資料來源", ""));
+      els.customTaskSourceCategory.append(new Option("請選擇資料來源分類", ""));
+      els.knowledgeType.append(new Option("請選擇知識類型", ""));
+      for (const [label, value] of categories.slice(1)) {
+        els.sourceCategory.append(new Option(label, label));
+        els.customTaskSourceCategory.append(new Option(label, label));
+      }
+      for (const item of knowledgeTypes) {
+        els.knowledgeType.append(new Option(item, item));
+        els.filterKnowledge.append(new Option(item, item));
+      }
+      els.filterKnowledge.prepend(new Option("全部知識類型", ""));
+      els.filterKnowledge.value = "";
+      hydrateStatusSelects();
+
+      localStorage.removeItem("sopLoginPhone");
+      els.loginPhone.value = "";
+      els.loginForm.addEventListener("submit", loginByPhone);
+      els.logoutButton.addEventListener("click", logout);
+      els.adminToggleButton.addEventListener("click", async () => {
+        if (state.adminMode && !state.phone) {
+          window.location.href = "/";
+          return;
+        }
+        state.adminMode = !state.adminMode;
+        await loadRecords();
+        renderUserState();
+      });
+      els.newRecordButton.addEventListener("click", () => {
+        resetEditMode();
+        els.form.scrollIntoView({ behavior: "smooth", block: "start" });
+      });
+      els.cancelEditButton.addEventListener("click", resetEditMode);
+      els.searchInput.addEventListener("input", () => {
+        state.search = els.searchInput.value.trim().toLowerCase();
+        render();
+      });
+      els.filterKnowledge.addEventListener("change", () => {
+        state.knowledge = els.filterKnowledge.value;
+        render();
+      });
+      els.filterStatus.addEventListener("change", () => {
+        state.status = els.filterStatus.value;
+        render();
+      });
+      els.statusHelpButton?.addEventListener("click", () => {
+        const willOpen = els.statusHelp.hasAttribute("hidden");
+        els.statusHelp.toggleAttribute("hidden", !willOpen);
+        els.statusHelpButton.setAttribute("aria-expanded", String(willOpen));
+      });
+      els.sourceCategory.addEventListener("change", () => {
+        const match = categories.find(([label]) => label === els.sourceCategory.value);
+        if (match && match[1]) els.knowledgeType.value = match[1];
+      });
+      els.form.elements.reviewRequirement.addEventListener("change", updateReviewOwnerField);
+      ["department", "role", "interviewee"].forEach((name) => {
+        els.form.elements[name].addEventListener("input", renderTemplateSuggestions);
+      });
+      els.templateSelector.addEventListener("change", () => {
+        state.selectedTemplateKey = els.templateSelector.value;
+        renderTemplateTasks();
+      });
+      els.addCustomTaskButton.addEventListener("click", createCustomTask);
+      els.form.addEventListener("submit", submitRecord);
+      setDefaultKnowledgeDate();
+      updateReviewOwnerField();
+      const templatesReady = loadTaskTemplates();
+      if (isAdminRoute()) templatesReady.finally(openAdminRoute);
+    }
+
+    function isAdminRoute() {
+      return window.location.pathname === "/admin" || window.location.pathname === "/admin/";
+    }
+
+    async function loginByPhone(event) {
+      event.preventDefault();
+      const phone = phoneDigits(els.loginPhone.value);
+      if (!phone) {
+        els.loginMessage.textContent = "請輸入電話號碼";
+        return;
+      }
+
+      els.loginMessage.textContent = "載入中...";
+      const response = await fetch(`/api/profile?phone=${encodeURIComponent(phone)}`);
+      if (!response.ok) {
+        els.loginMessage.textContent = "載入失敗，請稍後再試";
+        return;
+      }
+
+      const result = await response.json();
+      if (!(state.taskTemplates.people || []).length) await loadTaskTemplates();
+      state.phone = phone;
+      state.profile = result.profile || null;
+      state.records = result.records || [];
+      state.customTasks = result.customTasks || [];
+      state.adminMode = false;
+      state.editingId = null;
+      resetSessionUiState();
+
+      els.loginScreen.hidden = true;
+      els.appShell.hidden = false;
+      hydrateProfileForm();
+      renderUserState();
+      render();
+      renderTemplateSuggestions();
+
+      els.loginMessage.textContent = "";
+    }
+
+    function logout() {
+      if (isAdminRoute()) {
+        window.location.href = "/";
+        return;
+      }
+      state.phone = "";
+      state.profile = null;
+      state.records = [];
+      state.customTasks = [];
+      state.adminMode = false;
+      state.editingId = null;
+      localStorage.removeItem("sopLoginPhone");
+      els.loginPhone.value = "";
+      resetSessionUiState();
+      els.appShell.hidden = true;
+      els.loginScreen.hidden = false;
+      render();
+    }
+
+    async function openAdminRoute() {
+      state.phone = "";
+      state.profile = null;
+      state.records = [];
+      state.customTasks = [];
+      state.adminMode = true;
+      resetSessionUiState();
+
+      els.loginScreen.hidden = true;
+      els.appShell.hidden = false;
+      hydrateProfileForm();
+      renderUserState();
+      await loadRecords();
+      await loadAdminCustomTasks();
+      renderTemplateSuggestions();
+      render();
+      renderUserState();
+    }
+
+    function resetSessionUiState() {
+      state.category = "";
+      state.search = "";
+      state.knowledge = "";
+      state.status = "";
+      state.activeTab = "form";
+      state.editingId = null;
+      state.selectedTask = null;
+      state.templateCandidates = [];
+      state.selectedTemplateKey = "";
+
+      els.searchInput.value = "";
+      els.filterKnowledge.value = "";
+      els.filterStatus.value = "";
+      els.customTaskPeriod.value = "每日";
+      els.customTaskName.value = "";
+      els.customTaskSourceCategory.value = "";
+      els.customTaskPurpose.value = "";
+      els.customTaskMessage.textContent = "";
+      els.message.textContent = "";
+      els.statusHelp?.setAttribute("hidden", "");
+      els.statusHelpButton?.setAttribute("aria-expanded", "false");
+      els.formPanelTitle.textContent = "新增知識庫";
+      els.formPanelHint.textContent = "先從歷史任務選一項，再新增客戶問法與標準答案。";
+      els.editBanner.classList.remove("active");
+      els.submitButton.textContent = "＋ 新增這筆知識庫";
+      els.cancelEditButton.hidden = true;
+      els.existingAttachments.classList.remove("active");
+      els.existingAttachments.innerHTML = "";
+
+      els.form.reset();
+      els.statusSelect.value = "待整理";
+      setFormValue("phone", state.phone);
+      clearKnowledgeInputs();
+    }
+
+    function hydrateProfileForm() {
+      setFormValue("phone", state.phone);
+      setFormValue("sourceCategory", "客服/工程/維修人員經驗");
+      setFormValue("knowledgeType", "常見問答、判斷邏輯、客戶話術");
+      setFormValue("department", state.profile?.department || "");
+      setFormValue("role", state.profile?.title || "");
+      setFormValue("interviewee", state.profile?.person || "");
+    }
+
+    function renderUserState() {
+      if (state.adminMode && !state.phone) {
+        els.currentUserLabel.textContent = "後台 / 查看全部資料";
+        els.adminToggleButton.hidden = false;
+        els.adminToggleButton.textContent = "前台登入";
+        els.exportCsvLink.hidden = false;
+        els.exportJsonLink.hidden = false;
+        els.recordCount.textContent = state.records.length;
+        return;
+      }
+      const name = state.profile?.person || "未對應 JSON 人員";
+      const title = state.profile?.title || "可手動填寫職位";
+      els.currentUserLabel.textContent = `${name} / ${title} / ${state.phone}`;
+      els.adminToggleButton.hidden = true;
+      els.adminToggleButton.textContent = "前台登入";
+      els.exportCsvLink.hidden = true;
+      els.exportJsonLink.hidden = true;
+      els.recordCount.textContent = state.records.length;
+    }
+
+    function setDefaultKnowledgeDate() {
+      const field = els.form.elements.knowledgeUpdatedDate;
+      if (field && !field.value) field.value = new Date().toISOString().slice(0, 10);
+    }
+
+    async function loadRecords() {
+      if (!state.adminMode && !state.phone) {
+        state.records = [];
+        render();
+        renderUserState();
+        return;
+      }
+      const url = state.adminMode ? "/api/records" : `/api/records?phone=${encodeURIComponent(state.phone)}`;
+      const response = await fetch(url);
+      state.records = await response.json();
+      render();
+      renderUserState();
+    }
+
+    async function loadTaskTemplates() {
+      const response = await fetch("/api/task-templates");
+      state.taskTemplates = await response.json();
+      renderTemplateDatalists();
+      renderTemplateSuggestions();
+    }
+
+    async function loadCustomTasks() {
+      if (!state.phone) {
+        state.customTasks = [];
+        return;
+      }
+      const response = await fetch(`/api/custom-tasks?phone=${encodeURIComponent(state.phone)}`);
+      state.customTasks = response.ok ? await response.json() : [];
+      renderTemplateSuggestions();
+    }
+
+    async function loadAdminCustomTasks() {
+      if (!state.adminMode || state.phone) return;
+      const response = await fetch("/api/custom-tasks");
+      state.customTasks = response.ok ? await response.json() : [];
+      renderAdminTaskOverview();
+    }
+
+    function taskCategoryText(task = {}) {
+      return normalizeText([
+        task.sourceCategory,
+        task.name,
+        task.period,
+        task.frequency,
+        task.automation,
+        task.sop,
+        task.impact,
+        task.input,
+        task.tools,
+        task.output,
+        task.purpose,
+        task.trigger,
+        task.exception,
+        task.wait,
+        Array.isArray(task.steps) ? task.steps.join(" ") : ""
+      ].filter(Boolean).join(" "));
+    }
+
+    function taskSourceCategory(task = {}) {
+      if (task.sourceCategory && categories.some(([label]) => label === task.sourceCategory)) return task.sourceCategory;
+      const text = taskCategoryText(task);
+      const productManual = categories[1][0];
+      const repairForm = categories[2][0];
+      const staffExperience = categories[3][0];
+      const warrantyPricing = categories[4][0];
+      const systemData = categories[5][0];
+      const internalSop = categories[6][0];
+
+      if (text.match(/保固|報價|收費|費用|價格|舊換新|發票|請款|付款|折扣/)) return warrantyPricing;
+      if (text.match(/erp|大二|google sheet|試算表|excel|庫存|報表|系統|sheet|2\.0|email/)) return systemData;
+      if (text.match(/維修|報修|故障|待修|完修|派工|安裝|施工|現場|緊急|檢測|料件|客戶家/)) return repairForm;
+      if (text.match(/手冊|說明書|規格|型號|app|設定|產品|教學|門鎖|限制/)) return productManual;
+      if (text.match(/客服|客戶|客人|話術|回覆|電話|line|詢問|判斷|售後|體驗/)) return staffExperience;
+      if (text.match(/sop|流程|表單|報帳|權責|內部|行政|主管|會議|人資|採購|核銷|公司/)) return internalSop;
+      return staffExperience;
+    }
+
+    function visibleTaskItems() {
+      if (state.adminMode && !state.phone) return adminTaskItems();
+      const group = activeProfileTaskGroup();
+      return (group?.tasks || []).map((task) => ({
+        ...task,
+        sourceCategory: task.sourceCategory || taskSourceCategory(task)
+      }));
+    }
+
+    function taskCategoryCounts() {
+      const tasks = visibleTaskItems();
+      const counts = new Map();
+      counts.set("", tasks.length);
+      for (const task of tasks) {
+        const category = task.sourceCategory || taskSourceCategory(task);
+        counts.set(category, (counts.get(category) || 0) + 1);
+      }
+      return counts;
+    }
+
+    function roleScopeGroups() {
+      const people = state.taskTemplates.people || [];
+      const customByPhone = new Map();
+      const seenPhones = new Set();
+
+      for (const task of state.customTasks || []) {
+        const phone = phoneDigits(task.phone);
+        if (!phone) continue;
+        if (!customByPhone.has(phone)) customByPhone.set(phone, []);
+        customByPhone.get(phone).push(task);
+      }
+
+      const groups = people.map((group) => {
+        const phone = phoneDigits(group.phone);
+        if (phone) seenPhones.add(phone);
+        return {
+          ...group,
+          phone,
+          displayPhone: group.phone || phone,
+          tasks: [...(group.tasks || []), ...(customByPhone.get(phone) || [])].map(roleScopeTask)
+        };
+      });
+
+      for (const [phone, tasks] of customByPhone.entries()) {
+        if (seenPhones.has(phone)) continue;
+        const first = tasks[0] || {};
+        groups.push({
+          key: `custom-${phone}`,
+          phone,
+          displayPhone: first.phone || phone,
+          department: first.department || "",
+          title: first.title || "新增任務職位",
+          person: first.person || "",
+          tasks: tasks.map(roleScopeTask)
+        });
+      }
+
+      return groups.filter((group) => group.tasks?.length);
+    }
+
+    function roleScopeTask(task = {}) {
+      return {
+        ...task,
+        sourceCategory: task.sourceCategory || taskSourceCategory(task)
+      };
+    }
+
+    function roleScopeFromGroup(group = {}, options = {}) {
+      const allTasks = (group.tasks || []).map(roleScopeTask);
+      const tasks = options.category ? allTasks.filter((task) => task.sourceCategory === options.category) : allTasks;
+      const periodCounts = countBy(tasks, (task) => task.period || "其他");
+      const categoryCounts = countBy(tasks, (task) => task.sourceCategory || taskSourceCategory(task));
+      const tools = taskToolLabels(tasks);
+      const responsibilities = uniqueValues(tasks.map(taskResponsibilityText).filter(Boolean)).slice(0, 8);
+      const title = [group.department, group.title].filter(Boolean).join(" / ") || "未命名職位";
+      const owner = [group.person, group.displayPhone || group.phone].filter(Boolean).join(" / ");
+
+      return {
+        group,
+        title,
+        owner,
+        taskCount: tasks.length,
+        totalTaskCount: allTasks.length,
+        periodCounts,
+        categoryCounts,
+        tools,
+        responsibilities,
+        searchText: normalizeText([
+          title,
+          owner,
+          ...responsibilities,
+          ...tools,
+          ...tasks.map((task) => taskCategoryText(task))
+        ].join(" "))
+      };
+    }
+
+    function countBy(items, getKey) {
+      const counts = new Map();
+      for (const item of items) {
+        const key = getKey(item);
+        if (!key) continue;
+        counts.set(key, (counts.get(key) || 0) + 1);
+      }
+      return counts;
+    }
+
+    function taskToolLabels(tasks) {
+      const counts = new Map();
+      for (const task of tasks) {
+        const source = [task.tools, task.input, task.output].filter(Boolean).join(" ");
+        for (const label of source.split(/[、,，\/／\s]+/).map((item) => item.trim()).filter(Boolean)) {
+          if (label.length > 18) continue;
+          counts.set(label, (counts.get(label) || 0) + 1);
+        }
+      }
+      return [...counts.entries()]
+        .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], "zh-Hant"))
+        .slice(0, 8)
+        .map(([label]) => label);
+    }
+
+    function taskResponsibilityText(task = {}) {
+      const name = task.name || "未命名任務";
+      const period = task.period || "其他";
+      const detail = compactText(task.purpose || task.output || task.input || task.exception || "", 72);
+      return `${period}：${name}${detail ? ` - ${detail}` : ""}`;
+    }
+
+    function compactText(value = "", maxLength = 80) {
+      const text = String(value).replace(/\s+/g, " ").trim();
+      return text.length > maxLength ? `${text.slice(0, maxLength - 1)}…` : text;
+    }
+
+    function uniqueValues(values) {
+      return [...new Set(values.filter(Boolean))];
+    }
+
+    function adminTaskItems() {
+      const people = state.taskTemplates.people || [];
+      const profileByPhone = new Map();
+      const items = [];
+
+      for (const group of people) {
+        const phone = phoneDigits(group.phone);
+        if (phone) profileByPhone.set(phone, group);
+        for (const task of group.tasks || []) {
+          items.push(adminTaskFromTask(task, group, "json"));
+        }
+      }
+
+      for (const task of state.customTasks || []) {
+        const phone = phoneDigits(task.phone);
+        const profile = profileByPhone.get(phone) || {};
+        const group = {
+          ...profile,
+          phone: task.phone || profile.phone,
+          department: task.department || profile.department,
+          title: task.title || profile.title,
+          person: task.person || profile.person
+        };
+        items.push(adminTaskFromTask(task, group, "custom"));
+      }
+
+      return items
+        .map((item) => {
+          const records = state.records.filter((record) => recordMatchesTask(record, item));
+          const latest = records
+            .map((record) => record.updatedAt || record.createdAt || record.knowledgeUpdatedDate)
+            .filter(Boolean)
+            .sort()
+            .pop();
+          return {
+            ...item,
+            knowledgeCount: records.length,
+            latestKnowledgeAt: latest || ""
+          };
+        })
+        .sort((a, b) => {
+          const left = [a.department, a.title, a.person, a.period, a.name, a.sourceLabel].join(" ");
+          const right = [b.department, b.title, b.person, b.period, b.name, b.sourceLabel].join(" ");
+          return left.localeCompare(right, "zh-Hant");
+        });
+    }
+
+    function adminTaskFromTask(task = {}, group = {}, sourceType = "json") {
+      const phone = phoneDigits(task.phone || group.phone);
+      return {
+        id: task.id || `${sourceType}-${phone}-${task.period || "period"}-${task.name || "task"}`,
+        sourceType,
+        sourceLabel: sourceType === "custom" ? "新增任務" : "JSON歷史任務",
+        sourceCategory: task.sourceCategory || taskSourceCategory(task),
+        phone,
+        displayPhone: task.phone || group.phone || "",
+        department: task.department || group.department || "",
+        title: task.title || group.title || "",
+        person: task.person || group.person || "",
+        period: task.period || "其他",
+        name: task.name || "未命名任務",
+        frequency: task.frequency || "",
+        automation: task.automation || "",
+        sop: task.sop || "",
+        impact: task.impact || "",
+        input: task.input || "",
+        tools: task.tools || "",
+        output: task.output || "",
+        purpose: task.purpose || "",
+        trigger: task.trigger || "",
+        exception: task.exception || "",
+        wait: task.wait || "",
+        steps: Array.isArray(task.steps) ? task.steps : [],
+        createdAt: task.createdAt || ""
+      };
+    }
+
+    function recordMatchesTask(record = {}, task = {}) {
+      if (record.taskId && task.id && record.taskId === task.id) return true;
+
+      const sameName = normalizeText(record.taskName) === normalizeText(task.name);
+      if (!sameName) return false;
+
+      const recordPhone = phoneDigits(record.phone);
+      const samePhone = !task.phone || !recordPhone || recordPhone === task.phone;
+      const samePeriod = !record.taskPeriod || !task.period || normalizeText(record.taskPeriod) === normalizeText(task.period);
+      return samePhone && samePeriod;
+    }
+
+    function adminTaskSearchText(task = {}) {
+      return normalizeText([
+        task.sourceLabel,
+        task.sourceCategory,
+        task.displayPhone,
+        task.department,
+        task.title,
+        task.person,
+        task.period,
+        task.name,
+        task.frequency,
+        task.automation,
+        task.sop,
+        task.impact,
+        task.input,
+        task.tools,
+        task.output,
+        task.purpose,
+        task.trigger,
+        task.exception,
+        task.wait,
+        task.steps.join(" ")
+      ].filter(Boolean).join(" "));
+    }
+
+    async function createCustomTask() {
+      const period = els.customTaskPeriod.value || "不定期";
+      const name = els.customTaskName.value.trim();
+      const sourceCategory = els.customTaskSourceCategory.value;
+      const purpose = els.customTaskPurpose.value.trim();
+      if (!name) {
+        els.customTaskMessage.style.color = "var(--red)";
+        els.customTaskMessage.textContent = "請先填寫任務名稱";
+        els.customTaskName.focus();
+        return;
+      }
+      if (!sourceCategory) {
+        els.customTaskMessage.style.color = "var(--red)";
+        els.customTaskMessage.textContent = "請先選擇資料來源分類";
+        els.customTaskSourceCategory.focus();
+        return;
+      }
+
+      els.addCustomTaskButton.disabled = true;
+      els.customTaskMessage.style.color = "var(--muted)";
+      els.customTaskMessage.textContent = "正在新增任務...";
+
+      try {
+        const response = await fetch("/api/custom-tasks", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            phone: state.phone,
+            department: els.form.elements.department.value,
+            title: els.form.elements.role.value,
+            person: els.form.elements.interviewee.value,
+            period,
+            name,
+            sourceCategory,
+            purpose
+          })
+        });
+
+        const result = await response.json().catch(() => ({ error: "新增任務失敗" }));
+        if (!response.ok) throw new Error(result.error || "新增任務失敗");
+
+        state.customTasks = [...state.customTasks.filter((task) => task.id !== result.id), result];
+        els.customTaskName.value = "";
+        els.customTaskSourceCategory.value = "";
+        els.customTaskPurpose.value = "";
+        els.customTaskMessage.style.color = "var(--green)";
+        els.customTaskMessage.textContent = "已新增任務，可直接替這項任務新增知識庫。";
+        window.setTimeout(() => (els.customTaskMessage.textContent = ""), 2200);
+
+        const group = activeProfileTaskGroup();
+        if (group) state.selectedTemplateKey = group.key;
+        renderTemplateSuggestions();
+        startKnowledgeEntry(result);
+      } catch (error) {
+        els.customTaskMessage.style.color = "var(--red)";
+        els.customTaskMessage.textContent = error.message || "新增任務失敗";
+      } finally {
+        els.addCustomTaskButton.disabled = false;
+      }
+    }
+
+    async function submitRecord(event) {
+      event.preventDefault();
+      if (!state.selectedTask) {
+        els.message.style.color = "var(--red)";
+        els.message.textContent = "請先選擇一項歷史任務";
+        return;
+      }
+      els.message.textContent = "儲存中...";
+      const formData = new FormData(els.form);
+      formData.set("phone", els.form.elements.phone.value || state.phone);
+      const question = els.form.elements.knowledgeQuestion.value.trim();
+      const answer = els.form.elements.knowledgeAnswer.value.trim();
+      formData.set("title", question || `${state.selectedTask.name} 知識庫`);
+      formData.set("summary", `${state.selectedTask.period || "其他"} / ${state.selectedTask.name}`);
+      formData.set("rawContent", answer);
+      const isEditing = Boolean(state.editingId);
+      const response = await fetch(isEditing ? `/api/records/${encodeURIComponent(state.editingId)}` : "/api/records", {
+        method: isEditing ? "PUT" : "POST",
+        body: formData
+      });
+
+      if (!response.ok) {
+        const result = await response.json().catch(() => ({ error: "儲存失敗" }));
+        els.message.style.color = "var(--red)";
+        els.message.textContent = result.error || "儲存失敗";
+        return;
+      }
+
+      if (isEditing) {
+        resetEditMode({ keepMessage: true });
+      } else {
+        clearKnowledgeInputs({ keepTask: true });
+      }
+      els.message.style.color = "var(--green)";
+      els.message.textContent = isEditing ? "已儲存修改" : "已新增這筆知識庫";
+      window.setTimeout(() => (els.message.textContent = ""), 1800);
+      await loadRecords();
+    }
+
+    async function deleteRecord(id) {
+      if (!confirm("確定要刪除這筆資料與附件？")) return;
+      await fetch(`/api/records/${encodeURIComponent(id)}`, { method: "DELETE" });
+      await loadRecords();
+    }
+
+    function renderTemplateDatalists() {
+      const departments = new Set();
+      const roles = new Set();
+      const people = new Set();
+      for (const group of state.taskTemplates.people || []) {
+        if (group.department) departments.add(group.department);
+        if (group.title) roles.add(group.title);
+        if (group.person) people.add(group.person);
+      }
+      fillDatalist(els.departmentOptions, departments);
+      fillDatalist(els.roleOptions, roles);
+      fillDatalist(els.intervieweeOptions, people);
+    }
+
+    function fillDatalist(element, values) {
+      element.innerHTML = "";
+      [...values]
+        .filter(Boolean)
+        .sort((a, b) => a.localeCompare(b, "zh-Hant"))
+        .forEach((value) => element.append(new Option(value, value)));
+    }
+
+    function hydrateStatusSelects() {
+      els.statusSelect.innerHTML = "";
+      els.filterStatus.innerHTML = "";
+      els.filterStatus.append(new Option("全部狀態", ""));
+      for (const status of recordStatuses) {
+        els.statusSelect.append(new Option(status, status));
+        els.filterStatus.append(new Option(status, status));
+      }
+      els.statusSelect.value = "待整理";
+      els.filterStatus.value = "";
+    }
+
+    function normalizeRecordStatus(value = "") {
+      const text = String(value || "").trim();
+      if (text === "需補資料") return "須補資料";
+      if (text === "不可自動回覆") return "不可自動回復";
+      if (recordStatuses.includes(text)) return text;
+      return text || "待整理";
+    }
+
+    function renderTemplateSuggestions() {
+      const department = normalizeText(els.form.elements.department.value);
+      const role = normalizeText(els.form.elements.role.value);
+      const interviewee = normalizeText(els.form.elements.interviewee.value);
+      const groups = [...(state.taskTemplates.people || []), ...(state.taskTemplates.roles || [])];
+      const activeGroup = activeProfileTaskGroup();
+
+      const scored = groups
+        .map((group) => ({ group, score: templateScore(group, { department, role, interviewee }) }))
+        .filter((item) => item.score > 0)
+        .sort((a, b) => b.score - a.score || templateLabel(a.group).localeCompare(templateLabel(b.group), "zh-Hant"))
+        .slice(0, 20);
+
+      state.templateCandidates = scored.map((item) => item.group);
+      if (activeGroup) {
+        state.templateCandidates = state.templateCandidates.filter((group) => group.key !== activeGroup.key);
+        state.templateCandidates.unshift(activeGroup);
+      }
+      if (!state.templateCandidates.length) {
+        state.selectedTemplateKey = "";
+        els.templateBox.hidden = true;
+        els.templateSelector.innerHTML = "";
+        els.templateTasks.innerHTML = "";
+        return;
+      }
+
+      els.templateBox.hidden = false;
+      els.templateSelector.innerHTML = "";
+      for (const group of state.templateCandidates) {
+        els.templateSelector.append(new Option(`${templateLabel(group)}（${group.tasks.length} 項）`, group.key));
+      }
+      if (!state.templateCandidates.some((group) => group.key === state.selectedTemplateKey)) {
+        state.selectedTemplateKey = state.templateCandidates[0].key;
+      }
+      els.templateSelector.value = state.selectedTemplateKey;
+      renderTemplateTasks();
+    }
+
+    function activeProfileTaskGroup() {
+      if (!state.phone) return null;
+      const base = state.profile || {
+        key: `phone-${state.phone}`,
+        phone: state.phone,
+        department: els.form.elements.department.value,
+        title: els.form.elements.role.value || "未指定職位",
+        person: els.form.elements.interviewee.value || "未對應 JSON 人員",
+        tasks: []
+      };
+      const tasks = [...(base.tasks || []), ...state.customTasks].map((task) => {
+        task.sourceCategory = taskSourceCategory(task);
+        return task;
+      });
+      return {
+        ...base,
+        tasks
+      };
+    }
+
+    function templateScore(group, query) {
+      let score = 0;
+      const department = normalizeText(group.department);
+      const title = normalizeText(group.title);
+      const person = normalizeText(group.person || "");
+      const people = normalizeText((group.people || []).join(" "));
+      if (query.department && department.includes(query.department)) score += 3;
+      if (query.role && title.includes(query.role)) score += 5;
+      if (query.interviewee && person.includes(query.interviewee)) score += 7;
+      if (query.interviewee && people.includes(query.interviewee)) score += 4;
+      if (!query.department && !query.role && !query.interviewee) score = 0;
+      return score;
+    }
+
+    function renderTemplateTasks() {
+      const group = selectedTemplateGroup();
+      els.templateTasks.innerHTML = "";
+      if (!group) return;
+      const filteredTasks = state.category ? group.tasks.filter((task) => taskSourceCategory(task) === state.category) : group.tasks;
+      if (!filteredTasks?.length) {
+        const empty = document.createElement("div");
+        empty.className = "empty";
+        empty.textContent = "目前還沒有任務參考，可以先在上方新增每日、每週、每月、突發或不定期任務。";
+        els.templateTasks.append(empty);
+        return;
+      }
+
+      const grouped = [...filteredTasks].reduce((map, task) => {
+        const period = task.period || "其他";
+        if (!map.has(period)) map.set(period, []);
+        map.get(period).push(task);
+        return map;
+      }, new Map());
+
+      for (const period of ["每日", "每週", "每月", "每季", "年度", "突發", "不定期", "其他"]) {
+        const tasks = grouped.get(period);
+        if (!tasks?.length) continue;
+        const section = document.createElement("section");
+        section.className = "period-group";
+        const title = document.createElement("div");
+        title.className = "period-title";
+        title.textContent = `${period}任務`;
+        section.append(title);
+        for (const task of tasks) section.append(taskTemplateElement(task));
+        els.templateTasks.append(section);
+      }
+    }
+
+    function taskTemplateElement(task) {
+      const item = document.createElement("div");
+      item.className = `task-chip${task.source === "custom" ? " custom-task" : ""}`;
+      const head = document.createElement("div");
+      head.className = "task-chip-head";
+      const title = document.createElement("h4");
+      title.textContent = task.name;
+      head.append(title);
+      if (task.source === "custom") head.append(tag("自訂", "source"));
+      const meta = document.createElement("p");
+      meta.textContent = [task.frequency && `頻率：${task.frequency}`, task.tools && `工具：${task.tools}`]
+        .filter(Boolean)
+        .join("｜") || "未填頻率/工具";
+      const purpose = document.createElement("p");
+      purpose.textContent = task.purpose || task.output || "未填目的/產出";
+      const button = document.createElement("button");
+      button.type = "button";
+      button.textContent = "幫這項任務添加知識庫";
+      button.addEventListener("click", () => startKnowledgeEntry(task));
+      item.append(head, meta, purpose, button);
+      return item;
+    }
+
+    function selectedTemplateGroup() {
+      return state.templateCandidates.find((group) => group.key === state.selectedTemplateKey);
+    }
+
+    function startKnowledgeEntry(task) {
+      state.selectedTask = task;
+      const taskPhone = phoneDigits(task.phone || task.displayPhone || state.phone || els.form.elements.phone.value);
+      setFormValue("phone", taskPhone);
+      setFormValue("department", task.department || state.profile?.department || els.form.elements.department.value || "");
+      setFormValue("role", task.title || state.profile?.title || els.form.elements.role.value || "");
+      setFormValue("interviewee", task.person || state.profile?.person || els.form.elements.interviewee.value || "");
+      setFormValue("taskId", task.id || "");
+      setFormValue("taskName", task.name || "");
+      setFormValue("taskPeriod", task.period || "其他");
+      setFormValue("title", "");
+      const sourceCategory = taskSourceCategory(task);
+      const sourceMatch = categories.find(([label]) => label === sourceCategory);
+      setFormValue("sourceCategory", sourceCategory);
+      setFormValue("knowledgeType", sourceMatch?.[1] || "常見問答、判斷邏輯、客戶話術");
+      clearKnowledgeInputs({ keepTask: true });
+      const prompt = knowledgePromptForTask(task);
+      setFormValue("knowledgeVisibility", prompt.defaultVisibility);
+      setFormValue("reviewRequirement", prompt.defaultReviewRequirement);
+      updateReviewOwnerField();
+      updateKnowledgePlaceholders(task);
+      els.selectedTaskTitle.textContent = `${task.period || "其他"} / ${task.name}`;
+      els.selectedTaskMeta.textContent = [
+        task.tools && `工具：${task.tools}`,
+        task.purpose && `目的：${task.purpose}`,
+        task.output && `產出：${task.output}`
+      ]
+        .filter(Boolean)
+        .join("｜") || "請針對這項任務新增一筆客戶問法與標準答案。";
+      els.selectedTaskBox.hidden = false;
+      setKnowledgeFieldsDisabled(false);
+      els.submitButton.disabled = false;
+      els.form.elements.knowledgeQuestion.focus();
+    }
+
+    function startAdminKnowledgeEntry(task) {
+      startKnowledgeEntry(task);
+      els.form.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+
+    function knowledgePromptForTask(task = {}) {
+      task = task || {};
+      const text = normalizeText([
+        task.period,
+        task.name,
+        task.purpose,
+        task.output,
+        task.tools,
+        task.input,
+        task.trigger,
+        task.exception
+      ].filter(Boolean).join(" "));
+      const period = task.period || "其他";
+      const risky = text.match(/保固|報價|收費|費用|金額|請款|報帳|發票|客訴|退貨|換新|合約|財務|突發/);
+      const internal = text.match(/erp|大二|google sheet|庫存|訂單|序號|請款|報帳|發票|財務|內部|帳|採購/);
+
+      if (text.match(/保固|報價|收費|費用|金額|舊換新|換新/)) {
+        return {
+          question: "例：客人問 A 型號保固多久、過保維修要收多少、能不能舊換新",
+          model: "例：A 型號、B 型號、購買未滿一年、過保、無保固卡",
+          answer: "請寫可以對外回覆的標準答案，並標明哪些情況要先查序號或請主管確認。",
+          source: "例：保固卡、報價表、收費規則、主管確認紀錄、舊換新規則。",
+          troubleshooting: "例：無法確認購買日、序號查不到、金額有折扣空間時，改選需人工確認。",
+          notes: "例：外部知識庫只放可直接回覆客戶的文字；內部規則或底價放內部知識庫。",
+          defaultVisibility: "外部知識庫",
+          defaultReviewRequirement: "需人工確認"
+        };
+      }
+
+      if (text.match(/維修|報修|故障|派工|完工|工程|異常/)) {
+        return {
+          question: "例：客人說設備連不上、畫面沒有反應、報修後多久會到場",
+          model: "例：A 型號、已過保、APP 離線、現場無網路、需派工",
+          answer: "請寫客服可先回覆的處理方式，並標明是否需要派工或轉工程判斷。",
+          source: "例：維修總表、報修單、工程師經驗、維修 SOP、派工規則。",
+          troubleshooting: "例：先確認電源/網路/APP 狀態；仍無法排除才派工；涉及拆機需人工確認。",
+          notes: "例：把常見故障原因與不用派工的排除方式寫清楚。",
+          defaultVisibility: "外部知識庫",
+          defaultReviewRequirement: "條件式人工確認"
+        };
+      }
+
+      if (text.match(/安裝|設定|app|產品|型號|說明書|手冊|教學/)) {
+        return {
+          question: "例：客人問 APP 怎麼綁定、A 型號能不能裝在某個環境、設定失敗怎麼辦",
+          model: "例：A 型號、iOS/Android、安裝環境限制、第一次設定",
+          answer: "請寫可一步一步照做的設定教學或限制說明，避免只寫內部口語。",
+          source: "例：產品說明書、安裝手冊、APP 操作截圖、工程安裝經驗。",
+          troubleshooting: "例：先確認型號/系統版本/網路權限；不符合安裝限制時不要承諾可施工。",
+          notes: "例：可對外公開的教學放外部知識庫；施工限制與內部判斷放內部知識庫。",
+          defaultVisibility: "外部知識庫",
+          defaultReviewRequirement: "不需人工確認"
+        };
+      }
+
+      if (internal) {
+        return {
+          question: "例：同仁問訂單狀態怎麼查、序號在哪個欄位、庫存不足要找誰確認",
+          model: "例：ERP、大二、Google Sheet、訂單編號、序號、庫存品項",
+          answer: "請寫給內部同仁看的查詢步驟、欄位名稱、權責窗口與注意事項。",
+          source: "例：ERP 欄位、大二截圖、Google Sheet 欄位說明、內部 SOP。",
+          troubleshooting: "例：查不到資料時先核對電話/訂單號；跨部門或金額異常時需人工確認。",
+          notes: "例：含內部系統欄位、價格、庫存或個資的內容不要放外部知識庫。",
+          defaultVisibility: "內部知識庫",
+          defaultReviewRequirement: risky ? "需人工確認" : "條件式人工確認"
+        };
+      }
+
+      return {
+        question: `例：這項「${task.name || period + "任務"}」中，客戶或同仁最常問的一個問題`,
+        model: "例：適用型號、情境、客戶狀態、內部系統或例外條件",
+        answer: "請寫一段可直接使用的標準答案；若只能內部參考，請選內部知識庫。",
+        source: "例：公司 SOP、表單、主管確認、同仁經驗、產品文件或客戶服務紀錄。",
+        troubleshooting: "例：哪些條件可以直接回覆；哪些情況要轉人工、主管或工程確認。",
+        notes: "例：提醒 AI 不可承諾的事項、需要補查的欄位、或不適合對客戶公開的內容。",
+        defaultVisibility: risky ? "內部知識庫" : "通用知識庫",
+        defaultReviewRequirement: risky ? "需人工確認" : "條件式人工確認"
+      };
+    }
+
+    function updateKnowledgePlaceholders(task) {
+      const prompt = knowledgePromptForTask(task);
+      els.form.elements.knowledgeQuestion.placeholder = prompt.question;
+      els.form.elements.applicableModel.placeholder = prompt.model;
+      els.form.elements.knowledgeAnswer.placeholder = prompt.answer;
+      els.form.elements.answerSource.placeholder = prompt.source;
+      els.form.elements.troubleshootingSteps.placeholder = prompt.troubleshooting;
+      els.form.elements.notes.placeholder = prompt.notes;
+    }
+
+    function updateReviewOwnerField() {
+      const value = els.form.elements.reviewRequirement.value;
+      const needsOwner = value === "需人工確認" || value === "條件式人工確認";
+      els.reviewOwnerField.hidden = !needsOwner;
+      els.reviewOwner.required = needsOwner;
+      els.reviewOwner.disabled = !needsOwner;
+      if (!needsOwner) setFormValue("reviewOwner", "");
+    }
+
+    function setKnowledgeEntryVisible(visible) {
+      els.knowledgeEntry.hidden = !visible;
+      els.submitRow.hidden = !visible;
+    }
+
+    function clearKnowledgeInputs(options = {}) {
+      if (!options.keepTask) {
+        state.selectedTask = null;
+        setFormValue("taskId", "");
+        setFormValue("taskName", "");
+        setFormValue("taskPeriod", "");
+        setFormValue("knowledgeVisibility", "通用知識庫");
+        setFormValue("reviewRequirement", "需人工確認");
+        setFormValue("reviewOwner", "");
+        updateReviewOwnerField();
+        updateKnowledgePlaceholders(null);
+        els.selectedTaskBox.hidden = true;
+        setKnowledgeEntryVisible(false);
+        setKnowledgeFieldsDisabled(true);
+        els.submitButton.disabled = true;
+      }
+      for (const name of ["knowledgeQuestion", "applicableModel", "knowledgeAnswer", "answerSource", "troubleshootingSteps", "tags", "attachments", "notes", "rawContent", "title", "summary"]) {
+        setFormValue(name, "");
+      }
+      setFormValue("status", "待整理");
+      setDefaultKnowledgeDate();
+      if (options.keepTask && state.selectedTask) {
+        setFormValue("taskId", state.selectedTask.id || "");
+        setFormValue("taskName", state.selectedTask.name || "");
+        setFormValue("taskPeriod", state.selectedTask.period || "其他");
+        els.selectedTaskBox.hidden = false;
+        setKnowledgeEntryVisible(true);
+        setKnowledgeFieldsDisabled(false);
+        els.submitButton.disabled = false;
+      }
+    }
+
+    function setKnowledgeFieldsDisabled(disabled) {
+      for (const name of ["status", "knowledgeQuestion", "applicableModel", "knowledgeAnswer", "answerSource", "troubleshootingSteps", "tags", "attachments", "notes"]) {
+        const field = els.form.elements[name];
+        if (field) field.disabled = disabled;
+      }
+    }
+
+    function templateSummary(group) {
+      const counts = group.tasks.reduce((map, task) => {
+        const period = task.period || "其他";
+        map[period] = (map[period] || 0) + 1;
+        return map;
+      }, {});
+      const countText = Object.entries(counts)
+        .map(([period, count]) => `${period} ${count} 項`)
+        .join("、");
+      return `此 SOP 參考歷史任務：${templateLabel(group)}，共 ${group.tasks.length} 項（${countText}）。請依目前實際作業補完整步驟、使用系統、完成標準與常見問題。`;
+    }
+
+    function templateRawContent(group) {
+      return [`歷史任務參考：${templateLabel(group)}`, ...group.tasks.map(formatTask)].join("\n\n");
+    }
+
+    function formatTask(task) {
+      const lines = [
+        `【${task.period || "其他"}】${task.name}`,
+        task.frequency && `歷史頻率：${task.frequency}`,
+        task.purpose && `任務目的：${task.purpose}`,
+        task.input && `需要資料/輸入：${task.input}`,
+        task.tools && `使用系統/工具：${task.tools}`,
+        task.output && `產出結果：${task.output}`,
+        task.steps?.length ? `歷史步驟參考：\n${task.steps.map((step, index) => `${index + 1}. ${step}`).join("\n")}` : "",
+        "請補完整 SOP：",
+        "1. 目前實際作業步驟：",
+        "2. 需要檢查的欄位/文件/系統：",
+        "3. 完成標準：",
+        "4. 交接或回報對象：",
+        "5. 哪些情況要主管確認："
+      ].filter(Boolean);
+      return lines.join("\n");
+    }
+
+    function formatIssuePrompt(task) {
+      const lines = [
+        `【${task.period || "其他"}】${task.name}`,
+        task.trigger && `觸發條件：${task.trigger}`,
+        task.exception && `歷史例外/風險：${task.exception}`,
+        task.wait && `等待/卡關：${task.wait}`,
+        "請補充會遇到的問題：",
+        "1. 最常卡在哪一步：",
+        "2. 需要誰協助：",
+        "3. 客戶/同事常問什麼：",
+        "4. 目前怎麼解決："
+      ].filter(Boolean);
+      return lines.join("\n");
+    }
+
+    function periodSopField(period = "") {
+      if (period === "每日") return "dailySop";
+      if (period === "每週") return "weeklySop";
+      if (period === "每月") return "monthlySop";
+      return "specialSop";
+    }
+
+    function periodIssueField(period = "") {
+      if (period === "每日") return "dailyIssues";
+      if (period === "每週") return "weeklyIssues";
+      if (period === "每月") return "monthlyIssues";
+      return "specialIssues";
+    }
+
+    function templateLabel(group) {
+      const person = group.person ? ` / ${group.person}` : "";
+      const people = !group.person && group.people?.length ? ` / 同職位：${group.people.join("、")}` : "";
+      return `${group.department || "未填部門"} / ${group.title || "未填職位"}${person}${people}`;
+    }
+
+    function mergeText(current, addition) {
+      const trimmed = current.trim();
+      return trimmed ? `${trimmed}\n\n${addition}` : addition;
+    }
+
+    function normalizeText(value = "") {
+      return String(value).trim().toLowerCase();
+    }
+
+    function phoneDigits(value = "") {
+      return String(value).replace(/\D/g, "");
+    }
+
+    function editRecord(id) {
+      const record = state.records.find((item) => item.id === id);
+      if (!record) return;
+
+      state.editingId = id;
+      state.selectedTask = {
+        id: record.taskId || id,
+        name: record.taskName || record.title || "未命名任務",
+        period: record.taskPeriod || "其他",
+        tools: record.sourceCategory || "",
+        purpose: record.summary || record.knowledgeQuestion || ""
+      };
+      setFormValue("phone", record.phone || state.phone);
+      setFormValue("title", record.title || "");
+      setFormValue("sourceCategory", record.sourceCategory || "");
+      setFormValue("knowledgeType", record.knowledgeType || "");
+      setFormValue("knowledgeVisibility", record.knowledgeVisibility || "通用知識庫");
+      setFormValue("reviewRequirement", record.reviewRequirement || "需人工確認");
+      setFormValue("reviewOwner", record.reviewOwner || "");
+      updateReviewOwnerField();
+      setFormValue("department", record.department || "");
+      setFormValue("role", record.role || "");
+      setFormValue("interviewee", record.interviewee || "");
+      setFormValue("status", normalizeRecordStatus(record.status || "待整理"));
+      setFormValue("summary", record.summary || "");
+      setFormValue("rawContent", record.rawContent || "");
+      setFormValue("knowledgeQuestion", record.knowledgeQuestion || record.title || "");
+      setFormValue("applicableModel", record.applicableModel || "");
+      setFormValue("knowledgeAnswer", record.knowledgeAnswer || record.rawContent || "");
+      setFormValue("dailySop", record.dailySop || "");
+      setFormValue("weeklySop", record.weeklySop || "");
+      setFormValue("monthlySop", record.monthlySop || "");
+      setFormValue("specialSop", record.specialSop || "");
+      setFormValue("dailyIssues", record.dailyIssues || "");
+      setFormValue("weeklyIssues", record.weeklyIssues || "");
+      setFormValue("monthlyIssues", record.monthlyIssues || "");
+      setFormValue("specialIssues", record.specialIssues || "");
+      setFormValue("answerSource", record.answerSource || "");
+      setFormValue("troubleshootingSteps", record.troubleshootingSteps || "");
+      setFormValue("knowledgeUpdatedDate", record.knowledgeUpdatedDate || "");
+      setFormValue("tags", (record.tags || []).join(", "));
+      setFormValue("notes", record.notes || "");
+      setFormValue("attachments", "");
+      if (els.advancedFields) {
+        els.advancedFields.open = Boolean(
+          record.answerSource ||
+            record.troubleshootingSteps ||
+            record.rawContent ||
+            record.knowledgeUpdatedDate ||
+            record.tags?.length ||
+            record.notes ||
+            record.attachments?.length
+        );
+      }
+
+      renderExistingAttachments(record);
+      els.formPanelTitle.textContent = "編輯 SOP";
+      els.formPanelHint.textContent = "正在修改已收集的 SOP。若上傳新附件，會追加到原本附件後面。";
+      els.editBanner.classList.add("active");
+      els.submitButton.textContent = "儲存修改";
+      els.cancelEditButton.hidden = false;
+      els.selectedTaskTitle.textContent = `${state.selectedTask.period || "其他"} / ${state.selectedTask.name}`;
+      els.selectedTaskMeta.textContent = "正在編輯既有資料，儲存後會更新原本那一筆。";
+      els.selectedTaskBox.hidden = false;
+      setKnowledgeEntryVisible(true);
+      setKnowledgeFieldsDisabled(false);
+      els.submitButton.disabled = false;
+      renderTemplateSuggestions();
+      render();
+      els.form.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+
+    function setFormValue(name, value) {
+      const field = els.form.elements[name];
+      if (field) field.value = value;
+    }
+
+    function resetEditMode(options = {}) {
+      state.editingId = null;
+      els.form.reset();
+      setFormValue("phone", state.phone);
+      els.formPanelTitle.textContent = "新增知識庫";
+      els.formPanelHint.textContent = "先從歷史任務選一項，再新增客戶問法與標準答案。";
+      els.editBanner.classList.remove("active");
+      els.submitButton.textContent = "＋ 新增這筆知識庫";
+      els.cancelEditButton.hidden = true;
+      els.existingAttachments.classList.remove("active");
+      els.existingAttachments.innerHTML = "";
+      setDefaultKnowledgeDate();
+      hydrateProfileForm();
+      clearKnowledgeInputs();
+      renderTemplateSuggestions();
+      render();
+      if (!options.keepMessage) els.message.textContent = "";
+    }
+
+    function renderExistingAttachments(record) {
+      els.existingAttachments.innerHTML = "";
+      els.existingAttachments.classList.remove("active");
+      if (!record.attachments?.length) return;
+      els.existingAttachments.classList.add("active");
+      els.existingAttachments.append(tag("既有附件"));
+      for (const file of record.attachments) {
+        const link = document.createElement("a");
+        link.href = file.url;
+        link.target = "_blank";
+        link.rel = "noopener";
+        link.textContent = file.originalName;
+        els.existingAttachments.append(link);
+      }
+    }
+
+    function switchTab(tab) {
+      state.activeTab = tab;
+    }
+
+    function renderRoleOverview() {
+      if (!els.roleOverviewBox) return;
+      if (state.adminMode && !state.phone) {
+        els.roleOverviewBox.hidden = true;
+        return;
+      }
+
+      const group = activeProfileTaskGroup();
+      if (!group?.tasks?.length) {
+        els.roleOverviewBox.hidden = true;
+        return;
+      }
+
+      const scope = roleScopeFromGroup(group);
+      els.roleOverviewBox.hidden = false;
+      els.roleOverviewTitle.textContent = `${scope.title} 負責範圍`;
+      els.roleOverviewSummary.textContent = `${scope.taskCount} 項任務，幫助新人快速了解這個職位需要做的事情`;
+      renderRoleStats(els.roleOverviewStats, scope);
+      renderRoleResponsibilities(els.roleOverviewResponsibilities, scope);
+      els.roleOverviewTools.textContent = scope.tools.length
+        ? `常用工具/資料：${scope.tools.join("、")}`
+        : "常用工具/資料：尚未從任務中整理到明確工具";
+    }
+
+    function renderAdminRoleOverview() {
+      if (!els.adminRoleOverview) return;
+      if (!state.adminMode || state.phone) {
+        els.adminRoleOverview.hidden = true;
+        els.adminRoleList.innerHTML = "";
+        return;
+      }
+
+      const scopes = roleScopeGroups()
+        .map((group) => roleScopeFromGroup(group, { category: state.category }))
+        .filter((scope) => scope.taskCount > 0)
+        .filter((scope) => !state.search || scope.searchText.includes(state.search));
+
+      els.adminRoleOverview.hidden = false;
+      const taskCount = scopes.reduce((sum, scope) => sum + scope.taskCount, 0);
+      els.adminRoleSummary.textContent = `${scopes.length} 個職位 / ${taskCount} 項任務`;
+      els.adminRoleList.innerHTML = "";
+
+      if (!scopes.length) {
+        const empty = document.createElement("div");
+        empty.className = "empty";
+        empty.textContent = "目前沒有符合條件的職位負責範圍";
+        els.adminRoleList.append(empty);
+        return;
+      }
+
+      for (const scope of scopes) els.adminRoleList.append(roleScopeCard(scope));
+    }
+
+    function roleScopeCard(scope) {
+      const card = document.createElement("article");
+      card.className = "role-scope-card";
+      const title = document.createElement("h4");
+      title.textContent = scope.title;
+      card.append(title);
+
+      const meta = document.createElement("div");
+      meta.className = "record-meta";
+      if (scope.owner) meta.append(tag(scope.owner));
+      renderRoleStats(meta, scope);
+      card.append(meta);
+
+      const list = document.createElement("ul");
+      list.className = "role-responsibilities";
+      renderRoleResponsibilities(list, scope, 4);
+      card.append(list);
+
+      const tools = document.createElement("div");
+      tools.className = "role-tools";
+      tools.textContent = scope.tools.length ? `常用工具/資料：${scope.tools.join("、")}` : "常用工具/資料：尚未整理";
+      card.append(tools);
+
+      return card;
+    }
+
+    function renderRoleStats(container, scope) {
+      container.innerHTML = "";
+      container.append(tag(`${scope.taskCount} 項任務`, "source"));
+      for (const [period, count] of [...scope.periodCounts.entries()].slice(0, 5)) {
+        container.append(tag(`${period} ${count}`));
+      }
+      for (const [category, count] of [...scope.categoryCounts.entries()].slice(0, 3)) {
+        container.append(tag(`${category} ${count}`, "status"));
+      }
+    }
+
+    function renderRoleResponsibilities(container, scope, limit = 6) {
+      container.innerHTML = "";
+      const items = scope.responsibilities.length ? scope.responsibilities.slice(0, limit) : ["尚未整理到明確任務內容"];
+      for (const item of items) {
+        const li = document.createElement("li");
+        li.textContent = item;
+        container.append(li);
+      }
+    }
+
+    function render() {
+      renderCategories();
+      renderRoleOverview();
+      renderAdminRoleOverview();
+      renderAdminTaskOverview();
+      const records = filteredRecords();
+      els.recordCount.textContent = state.records.length;
+      els.records.innerHTML = "";
+
+      if (records.length === 0) {
+        const empty = document.createElement("div");
+        empty.className = "empty";
+        empty.textContent = "目前沒有符合條件的資料";
+        els.records.append(empty);
+        return;
+      }
+
+      for (const record of records) els.records.append(recordElement(record));
+    }
+
+    function renderAdminTaskOverview() {
+      if (!els.adminTaskOverview) return;
+      if (!state.adminMode || state.phone) {
+        els.adminTaskOverview.hidden = true;
+        els.adminTaskSummary.textContent = "0 項任務";
+        els.adminTaskList.innerHTML = "";
+        return;
+      }
+
+      const allItems = adminTaskItems();
+      const visibleItems = allItems.filter((item) => {
+        if (state.category && item.sourceCategory !== state.category) return false;
+        if (state.search && !adminTaskSearchText(item).includes(state.search)) return false;
+        return true;
+      });
+      const jsonCount = allItems.filter((item) => item.sourceType === "json").length;
+      const customCount = allItems.filter((item) => item.sourceType === "custom").length;
+
+      els.adminTaskOverview.hidden = false;
+      els.adminTaskSummary.textContent = `顯示 ${visibleItems.length}/${allItems.length} 項；JSON ${jsonCount} 項 / 新增 ${customCount} 項 / 知識庫 ${state.records.length} 筆`;
+      els.adminTaskList.innerHTML = "";
+
+      if (!visibleItems.length) {
+        const empty = document.createElement("div");
+        empty.className = "empty";
+        empty.textContent = "目前沒有符合搜尋條件的 JSON 或新增任務";
+        els.adminTaskList.append(empty);
+        return;
+      }
+
+      for (const item of visibleItems) els.adminTaskList.append(adminTaskElement(item));
+    }
+
+    function adminTaskElement(task) {
+      const item = document.createElement("article");
+      item.className = "record admin-task-record";
+
+      const body = document.createElement("div");
+      const title = document.createElement("h4");
+      title.textContent = `${task.period} / ${task.name}`;
+      body.append(title);
+
+      const meta = document.createElement("div");
+      meta.className = "record-meta";
+      meta.append(tag(task.sourceLabel, "source"));
+      meta.append(tag(`知識庫 ${task.knowledgeCount} 筆`, task.knowledgeCount ? "status" : ""));
+      if (task.displayPhone) meta.append(tag(`電話：${task.displayPhone}`));
+      if (task.department) meta.append(tag(task.department));
+      if (task.title) meta.append(tag(task.title));
+      if (task.person) meta.append(tag(task.person));
+      if (task.latestKnowledgeAt) meta.append(tag(`最近更新：${formatDate(task.latestKnowledgeAt)}`));
+      body.append(meta);
+
+      const summary = document.createElement("p");
+      summary.className = "summary";
+      summary.textContent = task.purpose || task.output || task.input || "目前只有任務名稱，尚未補充任務內容";
+      body.append(summary);
+
+      const details = document.createElement("details");
+      const detailsSummary = document.createElement("summary");
+      detailsSummary.textContent = "查看任務細節";
+      const grid = document.createElement("div");
+      grid.className = "detail-grid";
+      [
+        ["來源", task.sourceLabel],
+        ["負責人", [task.department, task.title, task.person].filter(Boolean).join(" / ")],
+        ["頻率", task.frequency],
+        ["自動化難度", task.automation],
+        ["SOP 狀態", task.sop],
+        ["影響程度", task.impact],
+        ["輸入來源", task.input],
+        ["使用工具", task.tools],
+        ["輸出結果", task.output],
+        ["任務目的", task.purpose],
+        ["觸發條件", task.trigger],
+        ["例外或常見問題", task.exception],
+        ["等待或卡點", task.wait],
+        ["執行步驟", task.steps.length ? task.steps.map((step, index) => `${index + 1}. ${step}`).join("\n") : ""]
+      ].forEach(([label, value]) => {
+        const block = document.createElement("div");
+        block.className = "detail-block";
+        const strong = document.createElement("strong");
+        strong.textContent = label;
+        const paragraph = document.createElement("p");
+        paragraph.textContent = value || "未填";
+        block.append(strong, paragraph);
+        grid.append(block);
+      });
+      details.append(detailsSummary, grid);
+      body.append(details);
+
+      const action = document.createElement("div");
+      action.className = "record-actions";
+      const adminStart = document.createElement("button");
+      adminStart.className = "button secondary";
+      adminStart.type = "button";
+      adminStart.textContent = "幫這項任務添加知識庫";
+      adminStart.addEventListener("click", () => startAdminKnowledgeEntry(task));
+      action.append(adminStart);
+
+      item.append(body, action);
+      return item;
+    }
+
+    function renderCategories() {
+      const counts = taskCategoryCounts();
+      els.categoryList.innerHTML = "";
+      for (const [label, value] of categories) {
+        const button = document.createElement("button");
+        button.className = `category-button${state.category === label || (!state.category && !value) ? " active" : ""}`;
+        button.type = "button";
+        button.innerHTML = `<span></span><span class="count"></span>`;
+        button.querySelector("span:first-child").textContent = label;
+        button.querySelector(".count").textContent = counts.get(value ? label : "") || 0;
+        button.addEventListener("click", () => {
+          state.category = value ? label : "";
+          renderTemplateTasks();
+          render();
+        });
+        els.categoryList.append(button);
+      }
+    }
+
+    function filteredRecords() {
+      return state.records.filter((record) => {
+        if (state.category && record.sourceCategory !== state.category) return false;
+        if (state.knowledge && record.knowledgeType !== state.knowledge) return false;
+        if (state.status && normalizeRecordStatus(record.status) !== state.status) return false;
+        if (state.search) {
+          const haystack = [
+            record.title,
+            record.sourceCategory,
+            record.knowledgeType,
+            record.knowledgeVisibility,
+            record.reviewRequirement,
+            record.reviewOwner,
+            record.department,
+            record.role,
+            record.interviewee,
+            record.taskName,
+            record.taskPeriod,
+            record.knowledgeQuestion,
+            record.applicableModel,
+            record.knowledgeAnswer,
+            record.summary,
+            record.rawContent,
+            record.dailySop,
+            record.weeklySop,
+            record.monthlySop,
+            record.specialSop,
+            record.dailyIssues,
+            record.weeklyIssues,
+            record.monthlyIssues,
+            record.specialIssues,
+            record.answerSource,
+            record.troubleshootingSteps,
+            record.knowledgeUpdatedDate,
+            record.notes,
+            ...(record.tags || [])
+          ].join(" ").toLowerCase();
+          if (!haystack.includes(state.search)) return false;
+        }
+        return true;
+      });
+    }
+
+    function recordElement(record) {
+      const item = document.createElement("article");
+      item.className = "record";
+      if (record.id === state.editingId) item.classList.add("editing");
+
+      const body = document.createElement("div");
+      const title = document.createElement("h4");
+      title.textContent = record.title;
+      body.append(title);
+
+      const meta = document.createElement("div");
+      meta.className = "record-meta";
+      meta.append(tag(record.taskPeriod || "未分期", "source"));
+      if (record.taskName) meta.append(tag(record.taskName));
+      meta.append(tag(record.knowledgeVisibility || "通用知識庫", "source"));
+      meta.append(tag(record.reviewRequirement || "需人工確認"));
+      if (record.reviewOwner) meta.append(tag(`確認：${record.reviewOwner}`));
+      meta.append(tag(normalizeRecordStatus(record.status), "status"));
+      if (record.phone) meta.append(tag(`電話：${record.phone}`));
+      if (record.department) meta.append(tag(record.department));
+      if (record.interviewee) meta.append(tag(record.interviewee));
+      if (record.knowledgeUpdatedDate) meta.append(tag(`最後更新：${record.knowledgeUpdatedDate}`));
+      body.append(meta);
+
+      const summary = document.createElement("p");
+      summary.className = "summary";
+      summary.textContent = knowledgePreview(record) || "尚未填寫知識庫內容";
+      body.append(summary);
+
+      if (record.tags?.length) {
+        const tags = document.createElement("div");
+        tags.className = "record-meta";
+        for (const value of record.tags) tags.append(tag(`#${value}`));
+        body.append(tags);
+      }
+
+      if (record.attachments?.length) {
+        const attachments = document.createElement("div");
+        attachments.className = "attachment-list";
+        for (const file of record.attachments) {
+          const link = document.createElement("a");
+          link.href = file.url;
+          link.target = "_blank";
+          link.rel = "noopener";
+          link.textContent = `附件：${file.originalName}`;
+          attachments.append(link);
+        }
+        body.append(attachments);
+      }
+
+      const details = document.createElement("details");
+      details.innerHTML = `
+        <summary>查看完整內容</summary>
+        <div class="detail-grid">
+          <div class="detail-block"><strong>對應歷史任務</strong><p></p></div>
+          <div class="detail-block"><strong>知識庫類型</strong><p></p></div>
+          <div class="detail-block"><strong>人工確認</strong><p></p></div>
+          <div class="detail-block"><strong>給誰確認?</strong><p></p></div>
+          <div class="detail-block"><strong>客戶問題/問法</strong><p></p></div>
+          <div class="detail-block"><strong>適用型號/情境</strong><p></p></div>
+          <div class="detail-block"><strong>標準答案</strong><p></p></div>
+          <div class="detail-block"><strong>答案來源</strong><p></p></div>
+          <div class="detail-block"><strong>例外/判斷規則</strong><p></p></div>
+          <div class="detail-block"><strong>最後更新日期</strong><p></p></div>
+          <div class="detail-block"><strong>備註</strong><p></p></div>
+          <div class="detail-block"><strong>建立/更新時間</strong><p></p></div>
+        </div>
+      `;
+      const detailParagraphs = details.querySelectorAll("p");
+      detailParagraphs[0].textContent = `${record.taskPeriod || "未分期"} / ${record.taskName || "未選任務"}`;
+      detailParagraphs[1].textContent = record.knowledgeVisibility || "通用知識庫";
+      detailParagraphs[2].textContent = record.reviewRequirement || "需人工確認";
+      detailParagraphs[3].textContent = record.reviewOwner || "未填";
+      detailParagraphs[4].textContent = record.knowledgeQuestion || record.title || "未填";
+      detailParagraphs[5].textContent = record.applicableModel || "未填";
+      detailParagraphs[6].textContent = record.knowledgeAnswer || record.rawContent || "未填";
+      detailParagraphs[7].textContent = record.answerSource || "未填";
+      detailParagraphs[8].textContent = record.troubleshootingSteps || "未填";
+      detailParagraphs[9].textContent = record.knowledgeUpdatedDate || "未填";
+      detailParagraphs[10].textContent = record.notes || "未填";
+      detailParagraphs[11].textContent = `${formatDate(record.createdAt)} 建立；${formatDate(record.updatedAt)} 更新`;
+      body.append(details);
+
+      const action = document.createElement("div");
+      action.className = "record-actions";
+      const edit = document.createElement("button");
+      edit.className = "button secondary";
+      edit.type = "button";
+      edit.textContent = "編輯";
+      edit.addEventListener("click", () => editRecord(record.id));
+      action.append(edit);
+
+      if (state.adminMode || phoneDigits(record.phone) === state.phone) {
+        const remove = document.createElement("button");
+        remove.className = "button danger";
+        remove.type = "button";
+        remove.textContent = "刪除";
+        remove.addEventListener("click", () => deleteRecord(record.id));
+        action.append(remove);
+      }
+
+      item.append(body, action);
+      return item;
+    }
+
+    function knowledgePreview(record) {
+      const question = record.knowledgeQuestion || record.title || "";
+      const answer = record.knowledgeAnswer || record.rawContent || "";
+      const model = record.applicableModel ? `（${record.applicableModel}）` : "";
+      const text = [question && `問：${question}${model}`, answer && `答：${answer}`].filter(Boolean).join("\n");
+      if (text) return text.slice(0, 240);
+      return [
+        record.dailySop,
+        record.weeklySop,
+        record.monthlySop,
+        record.specialSop,
+        record.rawContent
+      ]
+        .find((value) => value && value.trim())
+        ?.slice(0, 220);
+    }
+
+    function tag(value, extra = "") {
+      const span = document.createElement("span");
+      span.className = `tag ${extra}`.trim();
+      span.textContent = value || "未填";
+      return span;
+    }
+
+    function formatDate(value) {
+      if (!value) return "未記錄";
+      return new Date(value).toLocaleString("zh-TW", { hour12: false });
+    }
+  </script>
+</body>
+</html>
