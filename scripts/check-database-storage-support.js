@@ -39,4 +39,10 @@ if (pkg.scripts?.["import:render"] !== "node scripts/import-render-data.js") {
 
 readFileSync("scripts/import-render-data.js", "utf8");
 
+const storageReadyIndex = server.indexOf("const storageReady = initializeStorage();");
+const dbPoolIndex = server.indexOf("let dbPoolPromise = null;");
+if (dbPoolIndex === -1 || storageReadyIndex === -1 || dbPoolIndex > storageReadyIndex) {
+  throw new Error("dbPoolPromise must be initialized before storageReady calls initializeStorage");
+}
+
 console.log("database storage support checks passed");

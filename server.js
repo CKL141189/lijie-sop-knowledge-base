@@ -12,6 +12,7 @@ const RECORDS_FILE = join(DATA_DIR, "records.json");
 const TASK_TEMPLATES_FILE = join(DATA_DIR, "task-templates.json");
 const CUSTOM_TASKS_FILE = join(DATA_DIR, "custom-tasks.json");
 const USE_DATABASE = Boolean(process.env.DATABASE_URL);
+let dbPoolPromise = null;
 
 ensureDir(DATA_DIR);
 ensureDir(UPLOAD_DIR);
@@ -444,8 +445,6 @@ function safeJoin(base, requestPath) {
   const root = resolve(base);
   return target.startsWith(root) ? target : null;
 }
-
-let dbPoolPromise = null;
 
 async function initializeStorage() {
   if (!USE_DATABASE) return;
