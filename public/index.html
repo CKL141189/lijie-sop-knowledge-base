@@ -845,6 +845,34 @@
       line-height: 1.45;
     }
 
+    .task-steps {
+      border-top: 1px solid #edf1f4;
+      padding-top: 5px;
+      color: #3f4f5c;
+      font-size: 12px;
+      line-height: 1.5;
+    }
+
+    .task-steps summary {
+      cursor: pointer;
+      color: #244a67;
+      font-weight: 800;
+    }
+
+    .task-steps-list {
+      margin: 6px 0 0;
+      padding-left: 19px;
+    }
+
+    .task-steps-list li + li {
+      margin-top: 3px;
+    }
+
+    .task-steps-empty {
+      margin: 0;
+      color: var(--muted);
+    }
+
     .task-chip button {
       justify-self: start;
       min-height: 30px;
@@ -2296,8 +2324,35 @@
       button.type = "button";
       button.textContent = "幫這項任務添加知識庫";
       button.addEventListener("click", () => startKnowledgeEntry(task));
-      item.append(head, meta, purpose, button);
+      item.append(head, meta, purpose, taskStepsElement(task), button);
       return item;
+    }
+
+    function taskStepsElement(task = {}) {
+      const steps = Array.isArray(task.steps) ? task.steps.filter(Boolean) : [];
+      const details = document.createElement("details");
+      details.className = "task-steps";
+      const summary = document.createElement("summary");
+      summary.textContent = steps.length ? `原始處理步驟（${steps.length}）` : "原始處理步驟";
+      details.append(summary);
+
+      if (!steps.length) {
+        const empty = document.createElement("p");
+        empty.className = "task-steps-empty";
+        empty.textContent = "尚未提供處理步驟";
+        details.append(empty);
+        return details;
+      }
+
+      const list = document.createElement("ol");
+      list.className = "task-steps-list";
+      task.steps.map((step, index) => ({ step, index })).filter((item) => item.step).forEach(({ step }) => {
+        const li = document.createElement("li");
+        li.textContent = step;
+        list.append(li);
+      });
+      details.append(list);
+      return details;
     }
 
     function selectedTemplateGroup() {
