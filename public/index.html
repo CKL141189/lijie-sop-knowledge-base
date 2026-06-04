@@ -1480,7 +1480,6 @@
       els.filterKnowledge.value = "";
       hydrateStatusSelects();
 
-      localStorage.removeItem("sopLoginPhone");
       els.loginPhone.value = "";
       els.loginForm.addEventListener("submit", loginByPhone);
       els.logoutButton.addEventListener("click", logout);
@@ -1533,6 +1532,7 @@
       updateReviewOwnerField();
       const templatesReady = loadTaskTemplates();
       if (isAdminRoute()) templatesReady.finally(openAdminRoute);
+      else templatesReady.finally(restoreSavedLogin);
     }
 
     function isAdminRoute() {
@@ -1547,6 +1547,17 @@
         return;
       }
 
+      await loadPhoneSession(phone, { remember: true });
+    }
+
+    async function restoreSavedLogin() {
+      const phone = phoneDigits(localStorage.getItem("sopLoginPhone"));
+      if (!phone || isAdminRoute()) return;
+      els.loginPhone.value = phone;
+      await loadPhoneSession(phone, { remember: false });
+    }
+
+    async function loadPhoneSession(phone, options = {}) {
       els.loginMessage.textContent = "載入中...";
       const response = await fetch(`/api/profile?phone=${encodeURIComponent(phone)}`);
       if (!response.ok) {
@@ -1563,6 +1574,7 @@
       state.adminMode = false;
       state.editingId = null;
       resetSessionUiState();
+      if (options.remember) localStorage.setItem("sopLoginPhone", phone);
 
       els.loginScreen.hidden = true;
       els.appShell.hidden = false;
@@ -1575,6 +1587,7 @@
     }
 
     function logout() {
+      localStorage.removeItem("sopLoginPhone");
       if (isAdminRoute()) {
         window.location.href = "/";
         return;
@@ -1585,7 +1598,6 @@
       state.customTasks = [];
       state.adminMode = false;
       state.editingId = null;
-      localStorage.removeItem("sopLoginPhone");
       els.loginPhone.value = "";
       resetSessionUiState();
       els.appShell.hidden = true;
