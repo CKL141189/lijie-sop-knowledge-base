@@ -7,6 +7,7 @@ const requiredSnippets = [
   '"待整理"',
   '"待主管確認"',
   '"須補資料"',
+  '"可直接添加入知識庫"',
   '"不可自動回復"',
   '<select id="status" name="status"></select>',
   'statusSelect: document.querySelector("#status")',

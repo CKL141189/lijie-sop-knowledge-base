@@ -65,13 +65,13 @@ try {
   const title = `狀態欄位測試 ${Date.now()}`;
   const createResponse = await fetch(`${BASE_URL}/api/records`, {
     method: "POST",
-    body: baseFormData(phone, title, "須補資料")
+    body: baseFormData(phone, title, "可直接添加入知識庫")
   });
   const created = await createResponse.json();
   createdId = created.id || "";
 
   assert(createResponse.status === 201, `expected create 201, got ${createResponse.status}`);
-  assert(created.status === "須補資料", "created record should preserve selected status");
+  assert(created.status === "可直接添加入知識庫", "created record should preserve direct-add status");
 
   const updateResponse = await fetch(`${BASE_URL}/api/records/${encodeURIComponent(createdId)}`, {
     method: "PUT",

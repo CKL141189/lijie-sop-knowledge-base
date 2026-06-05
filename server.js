@@ -524,10 +524,11 @@ async function writeTaskTemplates(templates) {
 }
 
 async function saveRecord(record) {
+  const normalizedInput = normalizeRecord(record);
   if (USE_DATABASE) {
-    const createdAt = record.createdAt || new Date().toISOString();
-    const updatedAt = record.updatedAt || createdAt;
-    const normalizedRecord = { ...record, createdAt, updatedAt };
+    const createdAt = normalizedInput.createdAt || new Date().toISOString();
+    const updatedAt = normalizedInput.updatedAt || createdAt;
+    const normalizedRecord = { ...normalizedInput, createdAt, updatedAt };
     await dbQuery(
       `
         INSERT INTO records (id, phone, data, created_at, updated_at)
@@ -547,11 +548,11 @@ async function saveRecord(record) {
   }
 
   const records = await readRecords();
-  const index = records.findIndex((item) => item.id === record.id);
-  if (index === -1) records.push(record);
-  else records[index] = record;
+  const index = records.findIndex((item) => item.id === normalizedInput.id);
+  if (index === -1) records.push(normalizedInput);
+  else records[index] = normalizedInput;
   writeJson(RECORDS_FILE, records);
-  return record;
+  return normalizedInput;
 }
 
 async function saveCustomTask(task) {
@@ -626,11 +627,11 @@ function httpError(message, statusCode) {
 async function readRecords() {
   if (USE_DATABASE) {
     const result = await dbQuery("SELECT data FROM records ORDER BY created_at DESC");
-    return result.rows.map((row) => row.data);
+    return result.rows.map((row) => normalizeRecord(row.data));
   }
 
   try {
-    return JSON.parse(readFileSync(RECORDS_FILE, "utf8"));
+    return JSON.parse(readFileSync(RECORDS_FILE, "utf8")).map((record) => normalizeRecord(record));
   } catch {
     return [];
   }
@@ -712,11 +713,23 @@ function cleanText(value = "") {
   return String(value).trim();
 }
 
+function normalizeRecord(record = {}) {
+  const normalized = { ...record };
+  normalized.phone = normalizePhone(normalized.phone);
+  normalized.knowledgeVisibility = cleanText(normalized.knowledgeVisibility || "通用知識庫");
+  normalized.reviewRequirement = cleanText(normalized.reviewRequirement || "需人工確認");
+  normalized.reviewOwner = cleanText(normalized.reviewOwner);
+  normalized.tags = normalizeTags(normalized.tags);
+  normalized.attachments = normalizeAttachments(normalized.attachments);
+  normalized.status = normalizeRecordStatus(normalized.status);
+  return normalized;
+}
+
 function normalizeRecordStatus(value = "") {
   const text = cleanText(value);
   if (text === "需補資料") return "須補資料";
   if (text === "不可自動回覆") return "不可自動回復";
-  const allowed = new Set(["待整理", "待主管確認", "須補資料", "不可自動回復"]);
+  const allowed = new Set(["待整理", "待主管確認", "須補資料", "可直接添加入知識庫", "不可自動回復"]);
   return allowed.has(text) ? text : "待整理";
 }
 
@@ -735,6 +748,26 @@ function splitTags(value = "") {
     .split(/[,，#\n]/)
     .map((tag) => tag.trim())
     .filter(Boolean);
+}
+
+function normalizeTags(value = "") {
+  if (Array.isArray(value)) return value.map((tag) => cleanText(tag)).filter(Boolean);
+  return splitTags(value);
+}
+
+function normalizeAttachments(value = []) {
+  const files = Array.isArray(value) ? value : value && typeof value === "object" ? [value] : [];
+  return files
+    .filter((file) => file && typeof file === "object")
+    .map((file) => {
+      const normalized = { ...file };
+      normalized.originalName = cleanText(file.originalName || file.filename || file.name || "附件");
+      normalized.storedName = cleanText(file.storedName);
+      normalized.type = cleanText(file.type || file.contentType || "application/octet-stream");
+      normalized.url = cleanText(file.url);
+      normalized.size = Number(file.size || 0);
+      return normalized;
+    });
 }
 
 function safeFilename(filename) {
@@ -760,7 +793,7 @@ function toCsv(records) {
     ["sourceCategory", "資料來源"],
     ["knowledgeType", "可整理知識"],
     ["knowledgeVisibility", "知識庫類型"],
-    ["reviewRequirement", "人工確認"],
+    ["reviewRequirement", "這個需不需要人工確認"],
     ["reviewOwner", "給誰確認"],
     ["department", "部門"],
     ["role", "職位"],
